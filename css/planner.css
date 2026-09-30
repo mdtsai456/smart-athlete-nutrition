@@ -1,0 +1,566 @@
+/* 每日營養目標：分配表單、驗算結果及運動員摘要。 */
+.planner-context {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.planner-context label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text);
+  font-weight: 600;
+}
+.planner-context select {
+  padding: 10px 16px;
+  min-width: 180px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+}
+.planner-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(300px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.planner-editor {
+  padding: 24px;
+}
+.plan-step {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 12px;
+  border-bottom: 1px solid #e9eef4;
+  padding: 22px 0;
+}
+.step-index {
+  display: inline-grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #e8f1fa;
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.plan-step h2 {
+  font-size: 16px;
+  margin: 3px 0 18px;
+}
+.plan-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.plan-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 0;
+}
+.plan-field select {
+  width: 100%;
+  padding: 12px 9px;
+  border: 1px solid #cbd9e7;
+  border-radius: 8px;
+  background: white;
+  color: var(--text);
+  height: 47px;
+  font-size: 13px;
+}
+.unit-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #cbd9e7;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #fff;
+  min-width: 0;
+}
+.unit-input input {
+  border: 0;
+  background: transparent;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  outline-offset: 0;
+}
+.unit-input > span {
+  font-size: 12px;
+  color: #71859b;
+  white-space: nowrap;
+}
+.plan-hint {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #71859b;
+  margin: 12px 0 0;
+}
+.fat-fields {
+  margin-top: 14px;
+}
+.manual-plan {
+  margin-top: 20px;
+}
+.manual-plan summary {
+  font-size: 13px;
+  color: var(--primary);
+  cursor: pointer;
+}
+.manual-toggle {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  align-items: center;
+  margin: 18px 0;
+}
+.manual-fields {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.manual-fields input:disabled {
+  color: #8a99a8;
+}
+.planner-summary {
+  padding: 24px;
+  position: sticky;
+  top: 88px;
+}
+.summary-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.summary-heading h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.plan-total {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.plan-total > span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.plan-total > strong {
+  font-size: 35px;
+  color: var(--primary);
+  letter-spacing: -0.5px;
+}
+.plan-total small {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.macro-results {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.macro-result {
+  display: flex;
+  flex-direction: column;
+  padding: 13px 8px;
+  border-radius: 8px;
+  background: #f0f5fa;
+  gap: 9px;
+}
+.macro-result > span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.macro-result > strong {
+  font-size: 23px;
+}
+.macro-result strong small {
+  font-size: 12px;
+  font-weight: 400;
+}
+.macro-result > small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.macro-result.protein {
+  background: #edf4fc;
+}
+.macro-result.fat {
+  background: #fbf3e7;
+}
+.macro-result.carbs {
+  background: #ecf6f1;
+}
+.carb-check {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.carb-check strong {
+  font-size: 25px;
+}
+.carb-check small {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.energy-check {
+  padding: 20px 0;
+  font-size: 13px;
+}
+.energy-check p {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 12px 0 8px;
+}
+.energy-check > span {
+  display: block;
+  font-size: 19px;
+  font-weight: 650;
+}
+.energy-check > small {
+  display: block;
+  font-size: 11px;
+  margin-top: 12px;
+  line-height: 1.6;
+}
+.plan-alert {
+  border-radius: 7px;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+.plan-alert.okay {
+  background: #eaf5ee;
+  color: #28704f;
+}
+.plan-alert.warning {
+  background: #fff5e7;
+  color: #996026;
+}
+.plan-alert.error {
+  background: #fceeee;
+  color: #a94242;
+}
+.plan-review {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 18px 0;
+}
+.plan-review[hidden] {
+  display: none;
+}
+.plan-review input {
+  flex-shrink: 0;
+}
+.plan-save {
+  width: 100%;
+  margin-top: 10px;
+  min-height: 46px;
+}
+@media (max-width: 1150px) {
+  .planner-layout {
+    grid-template-columns: 1fr;
+  }
+  .planner-summary {
+    position: static;
+  }
+  .macro-result {
+    padding: 18px;
+  }
+  .macro-result > strong {
+    font-size: 27px;
+  }
+}
+@media (max-width: 520px) {
+  .planner-editor,
+  .planner-summary {
+    padding: 18px;
+  }
+  .planner-context {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .plan-step {
+    gap: 8px;
+  }
+  .plan-fields {
+    gap: 10px;
+  }
+  .plan-field select {
+    font-size: 12px;
+  }
+  .unit-input {
+    padding: 0 8px;
+    gap: 4px;
+  }
+  .unit-input input {
+    font-size: 16px;
+  }
+  .unit-input > span {
+    font-size: 10px;
+  }
+  .manual-fields {
+    grid-template-columns: 1fr;
+  }
+  .macro-result {
+    padding: 13px 8px;
+  }
+  .macro-result > strong {
+    font-size: 22px;
+  }
+  .plan-hint {
+    font-size: 11px;
+  }
+}
+.day-carb-summary {
+  padding: 16px;
+  margin-bottom: 24px;
+  border-radius: 12px;
+  background: #f0f6fc;
+  line-height: 1.6;
+}
+.day-carb-summary p {
+  margin: 8px 0;
+  color: var(--muted);
+}
+.day-carb-summary > span {
+  font-weight: 600;
+}
+/* Athlete context: compact,
+readable,
+and separate from allocation inputs. */
+.athlete-summary {
+  background: #fff;
+  border: 1px solid #dce6f0;
+  border-radius: 18px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 5px 22px #173b6410;
+}
+.athlete-summary-head,
+.athlete-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.athlete-summary-head {
+  justify-content: space-between;
+  gap: 20px;
+}
+.athlete-identity .avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  background: #eaf2fb;
+  color: #236396;
+}
+.athlete-eyebrow {
+  display: block;
+  font-size: 11px;
+  color: #74889f;
+  letter-spacing: 0.08em;
+  margin-bottom: 5px;
+}
+.athlete-identity h2 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: 0.02em;
+}
+.athlete-identity h2 small {
+  color: #8a9bb0;
+  font-size: 13px;
+  font-weight: 500;
+  margin-left: 6px;
+}
+.profile-edit {
+  font-size: 13px;
+  padding: 9px 14px;
+  border-radius: 9px;
+  background: #f8fbfe;
+}
+.profile-edit span {
+  margin-left: 10px;
+}
+.athlete-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 24px 0 20px;
+}
+.athlete-metrics > div {
+  padding: 0 24px;
+  border-left: 1px solid #e6edf5;
+  min-width: 0;
+}
+.athlete-metrics > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.athlete-metrics dt {
+  font-size: 12px;
+  color: #71849b;
+  margin-bottom: 8px;
+}
+.athlete-metrics dd {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 650;
+  color: #203a56;
+  overflow-wrap: anywhere;
+}
+.athlete-metrics dd.is-missing {
+  font-size: 16px;
+  color: #95a3b5;
+  font-weight: 400;
+}
+.athlete-notices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px 20px;
+  border-top: 1px solid #edf1f6;
+  padding-top: 16px;
+}
+.athlete-notice {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 12px;
+  color: #728298;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.athlete-notice strong {
+  white-space: nowrap;
+  font-weight: 600;
+  color: #4e647d;
+}
+.notice-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #96abc0;
+  flex-shrink: 0;
+}
+.has-allergy {
+  background: #fff3e7;
+  padding: 6px 10px;
+  border-radius: 7px;
+  margin-top: -6px;
+  color: #9b591a;
+}
+.has-allergy strong {
+  color: #9b591a;
+}
+.has-allergy .notice-dot {
+  background: #d58938;
+}
+.athlete-note {
+  margin-left: auto;
+  font-size: 12px;
+  color: #728298;
+  max-width: 100%;
+}
+.athlete-note summary {
+  cursor: pointer;
+  list-style: none;
+}
+.athlete-note summary::-webkit-details-marker {
+  display: none;
+}
+.athlete-note summary span {
+  margin-left: 10px;
+}
+.athlete-note p {
+  max-width: 420px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+.planner-context select,
+.plan-field select {
+  appearance: none;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23677e97' stroke-width='1.7'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 38px;
+}
+.planner-context > span {
+  font-size: 12px;
+}
+.planner-editor {
+  padding: 12px 26px 24px;
+}
+.planner-summary {
+  box-shadow: 0 6px 24px #143c6810;
+}
+.unit-input:focus-within {
+  border-color: #5796c8;
+  box-shadow: 0 0 0 3px #1c70ae12;
+}
+.profile-edit:hover {
+  background: #eaf3fc;
+}
+@media (max-width: 650px) {
+  .athlete-summary {
+    padding: 20px;
+    border-radius: 14px;
+  }
+  .athlete-summary-head {
+    gap: 10px;
+  }
+  .athlete-identity h2 {
+    font-size: 18px;
+  }
+  .athlete-identity .avatar {
+    display: none;
+  }
+  .athlete-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 0;
+  }
+  .athlete-metrics > div {
+    padding: 0 16px;
+  }
+  .athlete-metrics > div:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .athlete-metrics dd {
+    font-size: 19px;
+  }
+  .athlete-note {
+    margin-left: 0;
+    width: 100%;
+  }
+  .planner-editor {
+    padding: 12px 18px 20px;
+  }
+  .planner-context {
+    align-items: flex-start;
+  }
+}

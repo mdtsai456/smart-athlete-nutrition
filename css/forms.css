@@ -1,0 +1,343 @@
+dialog {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 0;
+  width: 480px;
+  max-width: calc(100vw - 32px);
+  max-height: 90vh;
+  color: var(--text);
+  box-shadow: 0 20px 100px #18355326;
+}
+dialog.wide {
+  width: 650px;
+}
+dialog::backdrop {
+  background: #102c4c66;
+  backdrop-filter: blur(3px);
+}
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-head h2 {
+  font-size: 17px;
+}
+dialog form,
+dialog > .guide,
+dialog > .muted,
+dialog > .notice {
+  margin-left: 24px;
+  margin-right: 24px;
+}
+dialog form {
+  padding: 20px 0 0;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 17px;
+  font-size: 13px;
+  color: #38506b;
+}
+input:not([type="checkbox"]):not([type="file"]),
+select,
+textarea {
+  min-width: 0;
+}
+.field input,
+.field select {
+  width: 100%;
+  border: 1px solid #cbd9e7;
+  border-radius: 6px;
+  padding: 11px;
+  background: #fff;
+  color: #172b42;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 18px;
+}
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 19px 24px;
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+}
+form .modal-footer {
+  margin-left: -24px;
+  margin-right: -24px;
+}
+.notice {
+  padding: 12px 15px;
+  background: #eef6fc;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #295b7d;
+  line-height: 1.8;
+}
+input[type="checkbox"] {
+  accent-color: var(--primary);
+}
+form h3 {
+  font-size: 13px;
+  margin-top: 20px;
+}
+.form-error {
+  color: #bd6662;
+  margin-top: 15px;
+  font-size: 13px;
+}
+.record-photo {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  border-radius: 8px;
+  display: block;
+  margin: 15px auto;
+}
+dialog > .record-photo {
+  max-width: calc(100% - 48px);
+}
+.nutrition-preview {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 20px 12px;
+  background: #eef6fc;
+  border-radius: 8px;
+  margin-top: 20px;
+  text-align: center;
+}
+.nutrition-preview strong {
+  display: block;
+  font-size: 22px;
+  color: #145b92;
+}
+.nutrition-preview span {
+  display: block;
+  margin-top: 5px;
+  font-size: 13px;
+  color: #667c93;
+}
+.guide {
+  padding: 20px 0;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.guide h3 {
+  margin-top: 10px;
+}
+.guide p {
+  color: #667c93;
+}
+.success {
+  text-align: center;
+  padding: 45px 20px;
+}
+.success > span {
+  background: #eaf3e6;
+  display: inline-grid;
+  place-items: center;
+  width: 65px;
+  height: 65px;
+  color: #608651;
+  border-radius: 50%;
+}
+.success h2 {
+  margin: 20px 0 10px;
+}
+.success p {
+  color: var(--muted);
+  font-size: 13px;
+}
+#toast {
+  position: fixed;
+  bottom: 25px;
+  left: 50%;
+  transform: translate(-50%, 20px);
+  background: #102c4c;
+  color: #fff;
+  border-radius: 8px;
+  padding: 13px 23px;
+  z-index: 100;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s;
+}
+#toast.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+/* Photo and confirmation workflows share the reference's two-column layout. */
+dialog.record-dialog {
+  width: 1040px;
+}
+.record-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 28px;
+  padding: 24px;
+}
+.record-layout section {
+  min-width: 0;
+}
+.record-layout h3 {
+  font-size: 20px;
+  margin: 0 0 20px;
+}
+.record-layout .muted {
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+.record-layout .notice {
+  font-size: 13px;
+  margin-top: 20px;
+}
+.record-layout form {
+  margin: 0;
+  padding: 0;
+}
+.record-layout .modal-footer {
+  margin-left: 0;
+  margin-right: 0;
+  padding: 20px 0 0;
+}
+.record-layout .record-photo {
+  width: 100%;
+  max-height: 345px;
+  min-height: 220px;
+  background: #e7f1f7;
+  object-fit: contain;
+  margin: 0;
+}
+.photo-placeholder {
+  background: #e7f1f7;
+  border-radius: 12px;
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 15px;
+  color: #54758d;
+  text-align: center;
+  padding: 20px;
+}
+.photo-placeholder .icon {
+  width: 40px;
+  height: 40px;
+}
+.photo-placeholder span {
+  font-size: 13px;
+}
+.record-layout .nutrition-preview {
+  grid-template-columns: repeat(2, 1fr);
+  row-gap: 20px;
+}
+@media (max-width: 850px) {
+  .record-layout {
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+  .photo-placeholder {
+    min-height: 150px;
+  }
+  .record-layout .record-photo {
+    min-height: 150px;
+    max-height: 220px;
+  }
+}
+.field textarea {
+  width: 100%;
+  border: 1px solid #cbd9e7;
+  border-radius: 6px;
+  padding: 11px;
+  font: inherit;
+  resize: vertical;
+}
+.athlete-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.athlete-facts dt {
+  color: #647c96;
+  font-size: 13px;
+}
+.athlete-facts dd {
+  margin: 5px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.profile-page {
+  max-width: 960px;
+  padding: 28px;
+}
+.profile-page-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.profile-page-heading h2 {
+  margin: 0 0 6px;
+}
+.profile-page-heading p,
+.profile-save p {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0;
+}
+.profile-page-heading .avatar {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+}
+.profile-page form h3 {
+  margin-top: 0;
+}
+.profile-page form > .muted {
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+.profile-save,
+.profile-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.profile-save {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  margin-top: 20px;
+}
+.profile-shortcut {
+  margin-bottom: 20px;
+  color: var(--muted);
+  font-size: 13px;
+}
+@media (max-width: 650px) {
+  .profile-page {
+    padding: 20px;
+  }
+  .profile-save,
+  .profile-shortcut {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+.context-bar[hidden] {
+  display: none;
+}

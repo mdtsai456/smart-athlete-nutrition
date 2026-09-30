@@ -1,0 +1,266 @@
+@media (max-width: 1150px) {
+  main {
+    padding: 28px 24px 45px;
+  }
+  .stats:not(.three-stats) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .page-heading {
+    flex-wrap: wrap;
+  }
+  .heading-actions {
+    justify-content: flex-start;
+  }
+  .workflow-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .stat-card {
+    padding: 20px;
+  }
+  .food-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 850px) {
+  .topbar {
+    position: relative;
+    padding: 0 16px;
+  }
+  .sidebar {
+    position: relative;
+    inset: auto;
+    width: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 10px;
+    display: block;
+    overflow: visible;
+  }
+  .nav-caption,
+  .sidebar-bottom {
+    display: none;
+  }
+  .sidebar nav {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+  }
+  .nav-item {
+    width: auto;
+    flex-shrink: 0;
+    white-space: nowrap;
+    margin: 0;
+    padding: 11px 13px;
+    font-size: 14px;
+  }
+  .main-shell {
+    margin: 0;
+    padding: 0;
+    min-height: calc(100vh - 130px);
+  }
+  main {
+    padding: 22px 16px 50px;
+  }
+  .workflow-grid,
+  .workflow-grid.equal {
+    grid-template-columns: 1fr;
+  }
+  .three-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .prototype-label {
+    display: none;
+  }
+  .top-actions {
+    gap: 10px;
+  }
+  .page-heading p {
+    font-size: 14px;
+  }
+  .page-heading h1 {
+    font-size: 26px;
+  }
+  .login-main {
+    padding-top: 1px;
+  }
+  .login {
+    margin: 6vh auto;
+  }
+  .food-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .food-card {
+    display: block;
+  }
+  .food-emoji {
+    margin-bottom: 15px;
+  }
+  .kiosk-players {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 520px) {
+  .top-brand {
+    font-size: 16px;
+  }
+  .role-switch select {
+    font-size: 12px;
+    max-width: 115px;
+  }
+  .topbar {
+    gap: 8px;
+  }
+  .nav-item .icon {
+    display: none;
+  }
+  .stats,
+  .stats:not(.three-stats),
+  .three-stats {
+    grid-template-columns: 1fr;
+  }
+  .stat-card {
+    padding: 22px;
+  }
+  .stat-number {
+    font-size: 27px;
+  }
+  .page-heading {
+    display: block;
+  }
+  .heading-actions {
+    margin-top: 16px;
+  }
+  .role-tag {
+    display: inline-block;
+  }
+  .heading-actions .btn {
+    font-size: 13px;
+  }
+  .context-bar {
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .team-pill {
+    font-size: 12px;
+    padding-top: 8px;
+    max-width: 130px;
+    line-height: 1.6;
+  }
+  .date-control {
+    padding: 8px;
+  }
+  .date-control .icon {
+    display: none;
+  }
+  .date-control input {
+    font-size: 12px;
+    width: 115px;
+  }
+  .panel-heading {
+    padding: 20px;
+  }
+  .panel-heading h2 {
+    font-size: 18px;
+  }
+  .panel-padded {
+    padding: 22px;
+  }
+  .comparison-heading {
+    display: block;
+  }
+  .comparison-heading label {
+    display: block;
+    margin-top: 16px;
+  }
+  .data-row {
+    font-size: 14px;
+    gap: 10px;
+  }
+  .login {
+    padding: 28px;
+    margin: 32px auto;
+  }
+  .food-grid {
+    grid-template-columns: 1fr;
+  }
+  .food-card {
+    display: flex;
+  }
+  .food-emoji {
+    width: 60px;
+    height: 75px;
+    font-size: 32px;
+    margin: 0;
+  }
+  .kiosk {
+    padding: 25px 15px;
+  }
+  .kiosk h2 {
+    font-size: 21px;
+  }
+  .kiosk-players {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .search {
+    width: 100%;
+  }
+  .search input {
+    min-width: 0;
+    width: 100%;
+  }
+  .toolbar > .muted {
+    display: none;
+  }
+  .bar-chart {
+    padding-left: 10px;
+    padding-right: 10px;
+    gap: 8px;
+  }
+  .bars {
+    gap: 6px;
+  }
+  .bar-column small {
+    font-size: 9px;
+  }
+  .axis {
+    font-size: 10px;
+  }
+  .legend {
+    font-size: 11px;
+  }
+  .chart-note {
+    font-size: 11px;
+  }
+  .personal-banner {
+    display: block;
+    padding: 22px;
+  }
+  .personal-banner .btn {
+    margin-top: 15px;
+  }
+  .personal-banner h2 {
+    font-size: 20px;
+  }
+  .form-grid {
+    gap: 0 10px;
+  }
+  .nutrition-preview {
+    grid-template-columns: repeat(2, 1fr);
+    row-gap: 20px;
+  }
+  .modal-head h2 {
+    font-size: 17px;
+  }
+  .modal-footer {
+    flex-wrap: wrap;
+  }
+  .table-wrap {
+    padding: 0 14px 15px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

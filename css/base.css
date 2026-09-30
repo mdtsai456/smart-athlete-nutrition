@@ -1,0 +1,102 @@
+/* Design tokens follow the supplied athlete-nutrition reference. */
+:root {
+  --bg: #f3f6fa;
+  --surface: #fff;
+  --text: #172b42;
+  --muted: #667c93;
+  --primary: #145b92;
+  --primary-soft: #edf4fb;
+  --border: #dce5ef;
+  --orange: #ad6720;
+  --sidebar: 230px;
+  --header-height: 68px;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Noto Sans TC",
+    "Microsoft JhengHei",
+    sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-size: 16px;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button,
+a,
+input,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a {
+  touch-action: manipulation;
+}
+button {
+  cursor: pointer;
+  transition: background 0.16s;
+}
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid #70a9ff;
+  outline-offset: 2px;
+}
+button:hover {
+  filter: brightness(0.97);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+h1 {
+  font-size: 28px;
+  margin: 0 0 8px;
+  font-weight: 750;
+}
+h2 {
+  font-size: 20px;
+  margin-bottom: 20px;
+  font-weight: 700;
+}
+h3 {
+  font-size: 17px;
+  margin-bottom: 14px;
+}
+p {
+  line-height: 1.6;
+}
+small {
+  font-size: 13px;
+}
+.muted {
+  color: var(--muted);
+}
+.icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
