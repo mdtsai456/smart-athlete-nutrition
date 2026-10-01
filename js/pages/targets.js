@@ -1,3 +1,7 @@
+/**
+ * 每日營養目標頁
+ * 管理選取球員、目標草稿、表單互動與驗算結果顯示。計算交由 planner Service，儲存交由 platform Service。
+ */
 import { athleteSummary } from "../components/athlete.js";
 import { esc } from "../components/ui.js";
 import {

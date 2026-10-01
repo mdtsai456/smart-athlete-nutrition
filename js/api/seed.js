@@ -1,3 +1,7 @@
+/**
+ * Mock 初始資料
+ * 提供示範日期、球員、菜色營養表與飲食紀錄。由 API 層在沒有既存資料時載入，不代表正式使用者資料。
+ */
 export const today = "2026-11-16";
 export const seed = {
   players: [

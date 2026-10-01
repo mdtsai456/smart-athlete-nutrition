@@ -1,3 +1,7 @@
+/**
+ * 角色首頁資料整理
+ * 將平台資料整理成指定球員的每日三餐紀錄、已記錄餐次與蛋白質達成率，供球員首頁及教練頁使用。
+ */
 export function playerDaily(data, playerId = "p1") {
   const player = data.players.find((player) => player.id === playerId);
   const records = data.records.filter(

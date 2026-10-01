@@ -1,4 +1,7 @@
-/** Pure macro allocation and validation. Inputs are dietitian decisions, not prescriptions. */
+/**
+ * 每日營養目標計算
+ * 處理訓練日／休息日需求、蛋白質與脂肪分配、剩餘碳水及熱量驗算。提供草稿與確認資料，不直接存取 API；設定值由營養師決定。
+ */
 export const ENERGY_TOLERANCE = 5;
 // Editable prototype defaults; final requirements are set by the dietitian.
 export const CARB_DAY_PRESETS = Object.freeze({ 訓練日: 6, 休息日: 4 });

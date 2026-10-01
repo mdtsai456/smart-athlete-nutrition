@@ -1,3 +1,7 @@
+/**
+ * 頁面組合與導覽設定
+ * 定義各角色可見的分頁與標題，組合菜色、飲食紀錄、營養分析及設備站等畫面。導覽限制僅用於前端展示，正式授權須由後端驗證。
+ */
 import { profileView } from "./profile.js";
 import { cameraView } from "./camera.js";
 import { coachDashboard, playerDashboard } from "./workflows.js";

@@ -1,3 +1,7 @@
+/**
+ * 運動員共用元件
+ * 產生完整資料、編輯表單及精簡摘要卡，供球員、營養師與教練頁面重用。欄位規則與資料整理來自 athlete Service。
+ */
 import { esc, avatar } from "./ui.js";
 import {
   athleteFacts,

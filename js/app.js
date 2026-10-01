@@ -1,3 +1,7 @@
+/**
+ * 應用程式入口
+ * 協調角色切換、頁面路由、表單事件與攝影機記錄流程。畫面交由 Pages／Components 產生，資料讀寫透過 Service。
+ */
 import { athleteDetails, athleteForm } from "./components/athlete.js";
 import { mountTargets } from "./pages/targets.js";
 import { platform, roles, today } from "./services/platform.js";

@@ -1,3 +1,7 @@
+/**
+ * API 存取層
+ * 統一處理 HTTP 請求與 Mock 回應，並保存瀏覽器中的模擬資料。後端網址及傳輸方式集中於此，UI 不直接呼叫 fetch。
+ */
 import { seed } from "./seed.js";
 // HTTP 與 Mock 共用 request 契約；正式串接只調整此層及 Service，不在 UI 寫 fetch。
 export const config = { mode: "mock", baseURL: "/api/v1" };

@@ -1,3 +1,7 @@
+/**
+ * 營養目標回歸測試
+ * 驗證營養分配、熱量驗算、需求提醒、按球員與日期儲存，以及舊版計畫相容性。透過 npm test 執行。
+ */
 import test from "node:test";
 import assert from "node:assert/strict";
 import {

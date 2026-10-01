@@ -1,3 +1,7 @@
+/**
+ * 應用程式外框
+ * 組合頂部列、角色導覽、頁面標題與內容區，並提供獨立設備站外框；依目前狀態選擇要呈現的頁面。
+ */
 import { icon, esc } from "./ui.js";
 import { roles } from "../services/platform.js";
 import { allowed, pageHeader, view } from "../pages/views.js";

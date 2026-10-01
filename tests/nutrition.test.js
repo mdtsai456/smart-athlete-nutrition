@@ -1,3 +1,7 @@
+/**
+ * 飲食營養回歸測試
+ * 驗證食物重量換算、每日資料隔離、飲食紀錄保存，以及攝影機結果對應營養資料表的流程。透過 npm test 執行。
+ */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { nutrition, playerSummary } from "../js/services/nutrition.js";

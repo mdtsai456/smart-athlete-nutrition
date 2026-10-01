@@ -1,3 +1,7 @@
+/**
+ * 角色操作頁面
+ * 產生示範登入頁、教練監督首頁與球員首頁，使用 Service 整理的資料及共用 UI 元件呈現內容。
+ */
 import { athleteDetails } from "../components/athlete.js";
 import { esc, button, progress, playerTable } from "../components/ui.js";
 import { roles } from "../services/platform.js";

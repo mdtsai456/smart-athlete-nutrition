@@ -1,3 +1,7 @@
+/**
+ * 平台資料服務
+ * 提供各頁共用的查詢、儲存與攝影機辨識介面，協調 API 存取、輸入驗證及營養計算，讓 UI 不依賴後端資料格式。
+ */
 import { athleteProfile } from "./athlete.js";
 import { confirmedPlan } from "./planner.js";
 import { request } from "../api/client.js";

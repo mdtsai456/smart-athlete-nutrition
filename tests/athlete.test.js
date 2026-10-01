@@ -1,3 +1,7 @@
+/**
+ * 運動員資料回歸測試
+ * 驗證欄位規則、資料保存、球員自填範圍、文字跳脫及個人資料頁入口。透過 npm test 執行，不載入前端網頁。
+ */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { athleteProfile, athleteFacts } from "../js/services/athlete.js";

@@ -1,3 +1,7 @@
+/**
+ * 球員個人資料頁
+ * 顯示目前示範球員的基本資料表單與儲存入口，重用運動員表單元件；提交事件由應用程式入口協調。
+ */
 import { athleteForm } from "../components/athlete.js";
 import { esc, avatar } from "../components/ui.js";
 export function profileView(data) {
