@@ -1,4 +1,4 @@
-/* Design tokens follow the supplied athlete-nutrition reference. */
+/* 此檔案定義色彩、間距與字型變數。 */
 :root {
   --bg: #f3f6fa;
   --surface: #fff;
@@ -7,6 +7,8 @@
   --primary: #145b92;
   --primary-soft: #edf4fb;
   --border: #dce5ef;
+  --card-radius: 14px;
+  --card-shadow: 0 4px 14px #18355338;
   --orange: #ad6720;
   --sidebar: 230px;
   --header-height: 68px;

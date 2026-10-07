@@ -1,4 +1,4 @@
-/* Load order: tokens/base → workspace components → forms → responsive overrides. */
+/* 載入順序：base、workspace、forms、responsive、planner。 */
 @import url("./base.css");
 @import url("./workspace.css");
 @import url("./forms.css");

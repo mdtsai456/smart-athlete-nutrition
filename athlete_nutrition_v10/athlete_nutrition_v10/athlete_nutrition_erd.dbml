@@ -1,0 +1,402 @@
+// Generated from athlete_nutrition_schema.sql by tools/build_erd.py.
+// SQL is canonical. Routine/trigger authorization and transaction rules are in SQL/production_guide.md.
+// Account is the common identity. Coach and Nutritionist are role-specific profiles.
+// Daily plan input_json is the original F2e form; final targets are separate calculated values.
+
+Table Organization {
+  organization_id bigint [pk, increment, not null]
+  name varchar(150) [not null, unique]
+  status varchar(30) [not null]
+  created_at datetime(6) [not null]
+  updated_at datetime(6) [not null]
+  checks {
+    `status IN ('active', 'inactive')` [name: 'chk_organization_status']
+  }
+}
+
+Table Account {
+  account_id bigint [pk, increment, not null]
+  organization_id bigint
+  email varchar(255) [not null]
+  password_hash varchar(255) [not null]
+  role varchar(30) [not null]
+  status varchar(30) [not null]
+  last_login_at datetime(6)
+  created_at datetime(6) [not null]
+  updated_at datetime(6) [not null]
+  active_email varchar(255) [note: 'Generated PERSISTENT; expression in SQL']
+  indexes {
+    (organization_id)
+    (email)
+    (active_email) [unique]
+  }
+  checks {
+    `role IN ('athlete', 'nutritionist', 'coach', 'admin')` [name: 'chk_account_role']
+    `status IN ('active', 'suspended', 'disabled')` [name: 'chk_account_status']
+    `role = 'admin' OR organization_id IS NOT NULL` [name: 'chk_account_organization_required']
+  }
+}
+
+Table Athlete {
+  athlete_id bigint [pk, increment, not null]
+  account_id bigint [not null, unique]
+  name varchar(100) [not null]
+  birth_date date
+  sex varchar(30)
+  weight_kg decimal(6,2)
+  height_cm decimal(6,2)
+  body_fat_percent decimal(5,2)
+  sport varchar(100)
+  weekly_training_count tinyint [note: 'SQL UNSIGNED']
+  primary_goal varchar(30)
+  jersey_number tinyint [note: 'SQL UNSIGNED']
+  position varchar(100)
+  dietary_restrictions_text text
+  allergies_text text
+  notes text
+  created_at datetime(6) [not null]
+  updated_at datetime(6) [not null]
+  checks {
+    `height_cm IS NULL OR height_cm BETWEEN 50 AND 260` [name: 'chk_athlete_height']
+    `body_fat_percent IS NULL OR (body_fat_percent > 0 AND body_fat_percent < 100)` [name: 'chk_athlete_body_fat']
+    `weekly_training_count IS NULL OR weekly_training_count <= 50` [name: 'chk_athlete_training']
+    `jersey_number IS NULL OR jersey_number <= 99` [name: 'chk_athlete_jersey']
+    `primary_goal IS NULL OR primary_goal IN ('maintain','gain_muscle','lose_fat','competition')` [name: 'chk_athlete_goal']
+    `sex IS NULL OR sex IN ('male','female','other','undisclosed')` [name: 'chk_athlete_sex']
+    `weight_kg IS NULL OR weight_kg BETWEEN 10 AND 350` [name: 'chk_athlete_weight']
+  }
+}
+
+Table Nutritionist {
+  nutritionist_id bigint [pk, increment, not null]
+  account_id bigint [not null, unique]
+  name varchar(100) [not null]
+  created_at datetime(6) [not null]
+  updated_at datetime(6) [not null]
+}
+
+Table Coach {
+  coach_id bigint [pk, increment, not null]
+  account_id bigint [not null, unique]
+  name varchar(100) [not null]
+  created_at datetime(6) [not null]
+  updated_at datetime(6) [not null]
+}
+
+Table AthleteCoach {
+  athlete_coach_id bigint [pk, increment, not null]
+  athlete_id bigint [not null]
+  coach_id bigint [not null]
+  start_date date [not null]
+  end_date date
+  indexes {
+    (coach_id)
+    (athlete_id, coach_id, start_date) [unique]
+  }
+  checks {
+    `end_date IS NULL OR end_date >= start_date` [name: 'chk_athlete_coach_dates']
+  }
+}
+
+Table Food {
+  food_id bigint [pk, increment, not null]
+  organization_id bigint
+  food_name varchar(150) [not null]
+  brand varchar(150)
+  food_type varchar(100)
+  description text
+  source varchar(100)
+  source_food_code varchar(100)
+  density_g_per_ml decimal(8,4)
+  status varchar(30) [not null]
+  created_at datetime(6) [not null]
+  updated_at datetime(6) [not null]
+  source_scope_id bigint [note: 'Generated PERSISTENT; expression in SQL']
+  indexes {
+    (organization_id)
+    (food_name)
+    (source_scope_id, source, source_food_code) [unique]
+  }
+  checks {
+    `(source IS NULL) = (source_food_code IS NULL)` [name: 'chk_food_source_pair']
+    `density_g_per_ml IS NULL OR density_g_per_ml > 0` [name: 'chk_food_density_positive']
+    `status IN ('active', 'inactive')` [name: 'chk_food_status']
+  }
+}
+
+Table Nutrient {
+  nutrient_id bigint [pk, increment, not null]
+  nutrient_code varchar(50) [unique]
+  nutrient_name varchar(100) [not null, unique]
+  unit varchar(30) [not null]
+  status varchar(30) [not null]
+  checks {
+    `status IN ('active', 'inactive')` [name: 'chk_nutrient_status']
+  }
+}
+
+Table FoodNutrient {
+  food_nutrient_id bigint [pk, increment, not null]
+  food_id bigint [not null]
+  nutrient_id bigint [not null]
+  amount_per_100g decimal(12,4) [not null]
+  source varchar(255)
+  source_version varchar(100)
+  calculation_method varchar(255)
+  updated_at datetime(6) [not null]
+  indexes {
+    (nutrient_id)
+    (food_id, nutrient_id) [unique]
+  }
+  checks {
+    `amount_per_100g >= 0` [name: 'chk_food_nutrient_amount_non_negative']
+  }
+}
+
+Table MealRecord {
+  meal_record_id bigint [pk, increment, not null]
+  athlete_id bigint [not null]
+  consumed_at datetime(6) [not null]
+  local_date date [not null]
+  timezone varchar(50) [not null]
+  meal_type varchar(50) [not null]
+  note text
+  status varchar(30) [not null]
+  created_by_account_id bigint [not null]
+  status_changed_by_account_id bigint
+  status_changed_at datetime(6)
+  status_change_reason varchar(500)
+  revision int [not null, default: 0, note: 'SQL UNSIGNED']
+  submission_request_id varchar(64) [note: 'SQL collation: ascii_bin']
+  submission_request_hash char(64) [note: 'SQL collation: ascii_bin']
+  created_at datetime(6) [not null]
+  updated_at datetime(6) [not null]
+  indexes {
+    (created_by_account_id, submission_request_id) [unique]
+    (athlete_id, consumed_at)
+    (athlete_id, local_date)
+  }
+  checks {
+    `(submission_request_id IS NULL) = (submission_request_hash IS NULL)` [name: 'chk_submission_pair']
+    `meal_type IN ('breakfast', 'lunch', 'dinner', 'snack', 'pre_training', 'post_training')` [name: 'chk_meal_record_meal_type']
+    `status IN ('draft', 'submitted', 'reviewed')` [name: 'chk_meal_record_status']
+    `(status = 'draft' AND status_changed_by_account_id IS NULL AND status_changed_at IS NULL AND status_change_reason IS NULL) OR (status IN ('submitted', 'reviewed') AND status_changed_by_account_id IS NOT NULL AND status_changed_at IS NOT NULL)` [name: 'chk_meal_status_metadata']
+    `timezone LIKE '%/%' OR timezone = 'UTC'` [name: 'chk_meal_record_timezone_iana']
+  }
+}
+
+Table MealImage {
+  meal_image_id bigint [pk, increment, not null]
+  meal_record_id bigint [not null]
+  object_key varchar(500) [not null]
+  mime_type varchar(100)
+  uploaded_at datetime(6) [not null]
+  indexes {
+    (meal_record_id)
+  }
+}
+
+Table MealItem {
+  meal_item_id bigint [pk, increment, not null]
+  meal_record_id bigint [not null]
+  meal_analysis_id bigint
+  food_id bigint
+  detected_label varchar(255)
+  estimated_weight_g decimal(10,2)
+  confirmed_weight_g decimal(10,2)
+  weight_source varchar(50)
+  confirmation_status varchar(30) [not null]
+  snapshot_nutrient_count int [not null, default: 0, note: 'SQL UNSIGNED']
+  confirmed_by_account_id bigint
+  confirmed_at datetime(6)
+  created_at datetime(6) [not null]
+  updated_at datetime(6) [not null]
+  indexes {
+    (meal_record_id)
+    (meal_analysis_id)
+    (food_id)
+  }
+  checks {
+    `food_id IS NOT NULL OR detected_label IS NOT NULL` [name: 'chk_meal_item_food_or_label']
+    `confirmation_status <> 'confirmed' OR food_id IS NOT NULL` [name: 'chk_meal_item_confirmed_food']
+    `confirmation_status IN ('pending', 'confirmed', 'rejected')` [name: 'chk_meal_item_confirmation_status']
+    `weight_source IS NULL OR weight_source IN ('ai', 'measured', 'manual')` [name: 'chk_meal_item_weight_source']
+    `(confirmation_status = 'confirmed' AND confirmed_weight_g IS NOT NULL AND weight_source IS NOT NULL AND confirmed_by_account_id IS NOT NULL AND confirmed_at IS NOT NULL AND snapshot_nutrient_count > 0) OR (confirmation_status IN ('pending', 'rejected') AND confirmed_weight_g IS NULL AND weight_source IS NULL AND confirmed_by_account_id IS NULL AND confirmed_at IS NULL AND snapshot_nutrient_count = 0)` [name: 'chk_meal_item_confirmed_complete']
+    `estimated_weight_g IS NULL OR estimated_weight_g > 0` [name: 'chk_meal_item_estimated_weight_positive']
+    `confirmed_weight_g IS NULL OR confirmed_weight_g > 0` [name: 'chk_meal_item_confirmed_weight_positive']
+  }
+}
+
+Table MealItemNutrient {
+  meal_item_nutrient_id bigint [pk, increment, not null]
+  meal_item_id bigint [not null]
+  nutrient_id bigint [not null]
+  amount decimal(12,4) [not null]
+  calculated_at datetime(6) [not null]
+  indexes {
+    (nutrient_id)
+    (meal_item_id, nutrient_id) [unique]
+  }
+  checks {
+    `amount >= 0` [name: 'chk_meal_item_nutrient_amount_non_negative']
+  }
+}
+
+Table MealAnalysis {
+  meal_analysis_id bigint [pk, increment, not null]
+  meal_record_id bigint [not null]
+  model_name varchar(150) [not null]
+  model_version varchar(100)
+  status varchar(30) [not null]
+  raw_result_json json [note: 'MariaDB JSON with JSON_VALID; business validation in commands']
+  error_message text
+  started_at datetime(6)
+  completed_at datetime(6)
+  created_at datetime(6) [not null]
+  indexes {
+    (meal_record_id)
+    (status)
+  }
+  checks {
+    `status IN ('queued', 'running', 'succeeded', 'failed')` [name: 'chk_meal_analysis_status']
+    `(status = 'queued' AND started_at IS NULL AND completed_at IS NULL AND error_message IS NULL AND raw_result_json IS NULL) OR     (status = 'running' AND started_at IS NOT NULL AND completed_at IS NULL AND error_message IS NULL AND raw_result_json IS NULL) OR     (status = 'succeeded' AND started_at IS NOT NULL AND completed_at IS NOT NULL AND error_message IS NULL AND raw_result_json IS NOT NULL) OR     (status = 'failed' AND started_at IS NOT NULL AND completed_at IS NOT NULL AND error_message IS NOT NULL AND CHAR_LENGTH(TRIM(error_message)) > 0 AND raw_result_json IS NULL)` [name: 'chk_analysis_lifecycle']
+    `(started_at IS NULL OR started_at >= created_at) AND (completed_at IS NULL OR completed_at >= started_at)` [name: 'chk_analysis_time_order']
+  }
+}
+
+Table AthleteNutritionTarget {
+  target_id bigint [pk, increment, not null]
+  athlete_id bigint [not null]
+  nutritionist_id bigint [not null]
+  nutrient_id bigint [not null]
+  target_basis varchar(20) [not null]
+  target_min decimal(12,4)
+  target_max decimal(12,4)
+  start_date date [not null]
+  end_date date
+  indexes {
+    (nutritionist_id)
+    (nutrient_id)
+    (athlete_id, nutrient_id, start_date) [unique]
+  }
+  checks {
+    `target_basis IN ('absolute', 'per_kg_bw')` [name: 'chk_nutrition_target_basis']
+    `target_min IS NOT NULL OR target_max IS NOT NULL` [name: 'chk_nutrition_target_has_value']
+    `(target_min IS NULL OR target_min >= 0) AND (target_max IS NULL OR target_max >= 0)` [name: 'chk_nutrition_target_non_negative']
+    `target_min IS NULL OR target_max IS NULL OR target_min <= target_max` [name: 'chk_nutrition_target_range']
+    `end_date IS NULL OR end_date >= start_date` [name: 'chk_nutrition_target_dates']
+  }
+}
+
+Table AthleteFoodRestriction {
+  restriction_id bigint [pk, increment, not null]
+  athlete_id bigint [not null]
+  food_id bigint
+  nutritionist_id bigint [not null]
+  restriction_type varchar(50) [not null]
+  max_daily_amount_g decimal(10,2)
+  description text
+  note text
+  start_date date [not null]
+  end_date date
+  indexes {
+    (food_id)
+    (nutritionist_id)
+    (athlete_id, food_id, start_date) [unique]
+  }
+  checks {
+    `food_id IS NOT NULL OR NULLIF(TRIM(description), '') IS NOT NULL` [name: 'chk_food_restriction_target']
+    `food_id IS NOT NULL OR restriction_type = 'prohibited'` [name: 'chk_food_restriction_free_text_type']
+    `restriction_type IN ('prohibited', 'limited')` [name: 'chk_food_restriction_type']
+    `( restriction_type = 'limited' AND food_id IS NOT NULL AND max_daily_amount_g IS NOT NULL AND max_daily_amount_g > 0 ) OR (restriction_type = 'prohibited' AND max_daily_amount_g IS NULL)` [name: 'chk_food_restriction_limit']
+    `end_date IS NULL OR end_date >= start_date` [name: 'chk_food_restriction_dates']
+  }
+}
+
+Table AthleteDailyNutritionPlan {
+  daily_plan_id bigint [pk, increment, not null]
+  athlete_id bigint [not null]
+  local_date date [not null]
+  revision int [not null, note: 'SQL UNSIGNED']
+  calculation_weight_kg decimal(6,2) [not null]
+  day_type varchar(20) [not null]
+  input_json json [not null, note: 'MariaDB JSON with JSON_VALID; business validation in commands']
+  target_energy_kcal decimal(12,4) [not null]
+  target_protein_g decimal(12,4) [not null]
+  target_carbohydrate_g decimal(12,4) [not null]
+  target_fat_g decimal(12,4) [not null]
+  warnings_json json [not null, note: 'MariaDB JSON with JSON_VALID; business validation in commands']
+  warnings_acknowledged tinyint [not null]
+  confirmed_by_account_id bigint [not null]
+  confirmed_at datetime(6) [not null]
+  change_reason varchar(500)
+  indexes {
+    (athlete_id, local_date, revision) [unique]
+    (confirmed_by_account_id)
+  }
+  checks {
+    `revision >= 1` [name: 'chk_daily_plan_revision']
+    `calculation_weight_kg > 0` [name: 'chk_daily_plan_weight']
+    `day_type IN ('training','rest')` [name: 'chk_daily_plan_day']
+    `JSON_TYPE(input_json) = 'OBJECT'` [name: 'chk_daily_plan_input']
+    `target_energy_kcal > 0 AND target_protein_g >= 0 AND target_carbohydrate_g >= 0 AND target_fat_g >= 0` [name: 'chk_daily_plan_targets']
+    `ABS(ROUND(ROUND(target_protein_g*4 + target_carbohydrate_g*4 + target_fat_g*9,1) - target_energy_kcal,1)) <= 5` [name: 'chk_daily_plan_energy']
+    `warnings_acknowledged IN (0,1)` [name: 'chk_daily_plan_ack']
+    `JSON_TYPE(warnings_json) = 'ARRAY' AND (JSON_LENGTH(warnings_json) = 0 OR warnings_acknowledged = 1)` [name: 'chk_daily_plan_warnings']
+    `revision = 1 OR NULLIF(TRIM(change_reason),'') IS NOT NULL` [name: 'chk_daily_plan_reason']
+  }
+}
+
+Table MealRevision {
+  meal_revision_id bigint [pk, increment, not null]
+  meal_record_id bigint [not null]
+  revision int [not null, note: 'SQL UNSIGNED']
+  action varchar(30) [not null]
+  actor_account_id bigint [not null]
+  reason varchar(500)
+  before_json json [note: 'MariaDB JSON with JSON_VALID; business validation in commands']
+  after_json json [not null, note: 'MariaDB JSON with JSON_VALID; business validation in commands']
+  recorded_at datetime(6) [not null]
+  indexes {
+    (meal_record_id, revision) [unique]
+    (actor_account_id)
+  }
+  checks {
+    `revision >= 1` [name: 'chk_meal_revision_number']
+    `action IN ('create','edit','confirm','reject','add_item','delete_item','save','review','reopen','add_image','delete_image','queue_analysis')` [name: 'chk_meal_revision_action']
+    `(action = 'create' AND before_json IS NULL) OR (action <> 'create' AND before_json IS NOT NULL AND JSON_TYPE(before_json) = 'OBJECT')` [name: 'chk_meal_revision_before']
+    `JSON_TYPE(after_json) = 'OBJECT'` [name: 'chk_meal_revision_after']
+    `action NOT IN ('reject','delete_item','reopen') OR NULLIF(TRIM(reason),'') IS NOT NULL` [name: 'chk_meal_revision_reason']
+  }
+}
+
+Ref: Account.organization_id > Organization.organization_id
+Ref: Athlete.account_id > Account.account_id
+Ref: Nutritionist.account_id > Account.account_id
+Ref: Coach.account_id > Account.account_id
+Ref: AthleteCoach.athlete_id > Athlete.athlete_id
+Ref: AthleteCoach.coach_id > Coach.coach_id
+Ref: Food.organization_id > Organization.organization_id
+Ref: FoodNutrient.food_id > Food.food_id
+Ref: FoodNutrient.nutrient_id > Nutrient.nutrient_id
+Ref: MealRecord.athlete_id > Athlete.athlete_id
+Ref: MealRecord.created_by_account_id > Account.account_id
+Ref: MealImage.meal_record_id > MealRecord.meal_record_id [delete: cascade]
+Ref: MealItem.meal_record_id > MealRecord.meal_record_id [delete: cascade]
+Ref: MealItem.meal_analysis_id > MealAnalysis.meal_analysis_id [delete: set null]
+Ref: MealItem.food_id > Food.food_id
+Ref: MealItem.confirmed_by_account_id > Account.account_id
+Ref: MealItemNutrient.meal_item_id > MealItem.meal_item_id [delete: cascade]
+Ref: MealItemNutrient.nutrient_id > Nutrient.nutrient_id
+Ref: MealAnalysis.meal_record_id > MealRecord.meal_record_id [delete: cascade]
+Ref: AthleteNutritionTarget.athlete_id > Athlete.athlete_id
+Ref: AthleteNutritionTarget.nutritionist_id > Nutritionist.nutritionist_id
+Ref: AthleteNutritionTarget.nutrient_id > Nutrient.nutrient_id
+Ref: AthleteFoodRestriction.athlete_id > Athlete.athlete_id
+Ref: AthleteFoodRestriction.food_id > Food.food_id
+Ref: AthleteFoodRestriction.nutritionist_id > Nutritionist.nutritionist_id
+Ref: MealRecord.status_changed_by_account_id > Account.account_id
+Ref: AthleteDailyNutritionPlan.athlete_id > Athlete.athlete_id [delete: restrict]
+Ref: AthleteDailyNutritionPlan.confirmed_by_account_id > Account.account_id [delete: restrict]
+Ref: MealRevision.meal_record_id > MealRecord.meal_record_id [delete: restrict]
+Ref: MealRevision.actor_account_id > Account.account_id [delete: restrict]

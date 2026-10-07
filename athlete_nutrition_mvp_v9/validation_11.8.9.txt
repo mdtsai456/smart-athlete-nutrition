@@ -1,0 +1,55 @@
+SERVER ('11.8.9-MariaDB-log', 1, 'ROW')
+test_analysis_lifecycle_and_retry (test_commands.CommandTests.test_analysis_lifecycle_and_retry) ... ok
+test_athlete_cannot_edit_submitted_or_review (test_commands.CommandTests.test_athlete_cannot_edit_submitted_or_review) ... ok
+test_commands_complete_workflow_and_reopen_requires_reason (test_commands.CommandTests.test_commands_complete_workflow_and_reopen_requires_reason) ... ok
+test_confirm_retry_preserves_snapshot_after_catalog_change (test_commands.CommandTests.test_confirm_retry_preserves_snapshot_after_catalog_change) ... ok
+test_cross_org_and_coach_writes_denied (test_commands.CommandTests.test_cross_org_and_coach_writes_denied) ... ok
+test_disabled_creator_does_not_block_active_nutritionist (test_commands.CommandTests.test_disabled_creator_does_not_block_active_nutritionist) ... ok
+test_edit_meal_derives_local_date (test_commands.CommandTests.test_edit_meal_derives_local_date) ... ok
+test_finished_analysis_metadata_must_match_status (test_commands.CommandTests.test_finished_analysis_metadata_must_match_status) ... ok
+test_image_and_item_deletion_commands (test_commands.CommandTests.test_image_and_item_deletion_commands) ... ok
+test_missing_nutrients_rolls_back_confirmation (test_commands.CommandTests.test_missing_nutrients_rolls_back_confirmation) ... ok
+test_nested_transaction_is_rejected_without_committing_caller (test_commands.CommandTests.test_nested_transaction_is_rejected_without_committing_caller) ... ok
+test_overflow_mid_rebuild_restores_old_snapshot (test_commands.CommandTests.test_overflow_mid_rebuild_restores_old_snapshot) ... ok
+test_pending_item_prevents_submission (test_commands.CommandTests.test_pending_item_prevents_submission) ... ok
+test_rejection_clears_snapshot_and_metadata (test_commands.CommandTests.test_rejection_clears_snapshot_and_metadata) ... ok
+test_reviewed_meal_freezes_all_children (test_commands.CommandTests.test_reviewed_meal_freezes_all_children) ... ok
+test_running_analysis_prevents_submission (test_commands.CommandTests.test_running_analysis_prevents_submission) ... ok
+test_snapshot_does_not_change_when_catalog_changes (test_commands.CommandTests.test_snapshot_does_not_change_when_catalog_changes) ... ok
+test_terminal_analysis_cannot_be_overwritten (test_commands.CommandTests.test_terminal_analysis_cannot_be_overwritten) ... ok
+test_catalog_update_is_serialized_with_complete_confirmation (test_concurrency.ConcurrencyTests.test_catalog_update_is_serialized_with_complete_confirmation) ... ok
+test_effective_date_autocommit_is_rejected (test_concurrency.ConcurrencyTests.test_effective_date_autocommit_is_rejected) ... ok
+test_period_writes_see_committed_overlap_despite_old_read_view (test_concurrency.ConcurrencyTests.test_period_writes_see_committed_overlap_despite_old_read_view) ... ok
+test_review_waits_for_confirmation_then_sees_complete_snapshot (test_concurrency.ConcurrencyTests.test_review_waits_for_confirmation_then_sees_complete_snapshot) ... ok
+test_api_commands_work_without_raw_dml_or_helpers (test_permissions.PermissionsTests.test_api_commands_work_without_raw_dml_or_helpers) ... ok
+test_worker_cannot_modify_meals (test_permissions.PermissionsTests.test_worker_cannot_modify_meals) ... ok
+test_repeated_failure_exhausts_retry_and_leaves_no_partial_data (test_retries.RetryTests.test_repeated_failure_exhausts_retry_and_leaves_no_partial_data) ... ok
+test_transient_failure_after_snapshot_write_retries_whole_command (test_retries.RetryTests.test_transient_failure_after_snapshot_write_retries_whole_command) ... ok
+test_analysis_succeeded_requires_completion (test_schema.SchemaTests.test_analysis_succeeded_requires_completion) ... ok
+test_catalog_addition_does_not_invalidate_history (test_schema.SchemaTests.test_catalog_addition_does_not_invalidate_history) ... ok
+test_closing_assignment_with_disabled_staff_is_allowed (test_schema.SchemaTests.test_closing_assignment_with_disabled_staff_is_allowed) ... ok
+test_coach_and_restriction_overlap_denied (test_schema.SchemaTests.test_coach_and_restriction_overlap_denied) ... ok
+test_confirmed_requires_weight_source (test_schema.SchemaTests.test_confirmed_requires_weight_source) ... ok
+test_creation_time_is_immutable (test_schema.SchemaTests.test_creation_time_is_immutable) ... ok
+test_creator_is_immutable (test_schema.SchemaTests.test_creator_is_immutable) ... ok
+test_cross_org_staff_assignment_denied (test_schema.SchemaTests.test_cross_org_staff_assignment_denied) ... ok
+test_draft_cannot_skip_to_reviewed (test_schema.SchemaTests.test_draft_cannot_skip_to_reviewed) ... ok
+test_foreign_food_is_denied (test_schema.SchemaTests.test_foreign_food_is_denied) ... ok
+test_partial_snapshot_is_detected (test_schema.SchemaTests.test_partial_snapshot_is_detected) ... ok
+test_pending_cannot_have_confirmation_metadata (test_schema.SchemaTests.test_pending_cannot_have_confirmation_metadata) ... ok
+test_rejected_cannot_retain_source (test_schema.SchemaTests.test_rejected_cannot_retain_source) ... ok
+test_snapshot_change_requires_active_confirmer (test_schema.SchemaTests.test_snapshot_change_requires_active_confirmer) ... ok
+test_snapshot_is_complete_and_atomic (test_schema.SchemaTests.test_snapshot_is_complete_and_atomic) ... ok
+test_suspended_actor_is_denied (test_schema.SchemaTests.test_suspended_actor_is_denied) ... ok
+test_suspended_staff_cannot_get_new_target (test_schema.SchemaTests.test_suspended_staff_cannot_get_new_target) ... ok
+test_target_period_overlap_and_inclusive_boundaries (test_schema.SchemaTests.test_target_period_overlap_and_inclusive_boundaries) ... ok
+test_timezone_dst_uses_consumed_utc (test_schema.SchemaTests.test_timezone_dst_uses_consumed_utc) ... ok
+test_unknown_timezone_is_denied (test_schema.SchemaTests.test_unknown_timezone_is_denied) ... ok
+test_wrong_timezone_date_is_denied (test_schema.SchemaTests.test_wrong_timezone_date_is_denied) ... ok
+test_unfrozen_data_survives_upgrade (test_upgrade.UpgradeTests.test_unfrozen_data_survives_upgrade) ... ok
+test_upgrade_refuses_historical_rows_before_altering_schema (test_upgrade.UpgradeTests.test_upgrade_refuses_historical_rows_before_altering_schema) ... ok
+
+----------------------------------------------------------------------
+Ran 49 tests in 1.110s
+
+OK

@@ -1,0 +1,25 @@
+{
+  "database": "athlete_nutrition_v10",
+  "server_version": "12.3.3-MariaDB-ubu2404",
+  "log_bin": 0,
+  "binlog_format": "ROW",
+  "tables": 18,
+  "columns": 169,
+  "foreign_keys": 30,
+  "triggers": 40,
+  "routines": 26,
+  "application_rows": 0,
+  "original_zeabur_tables": 0,
+  "temporary_test_principals_remaining": 0,
+  "comparison": "all DDL column types/nullability/collations/defaults/generated flags/auto_increment and FK endpoints matched",
+  "tls_enabled": true,
+  "athlete_weight_check": "`weight_kg` is null or `weight_kg` between 10 and 350",
+  "integration_cases_passed": 29,
+  "frontend_mock_cases_passed": 24,
+  "offline_cases_passed": 3,
+  "validation_date": "2026-10-06",
+  "final_renamed_columns": {
+    "sex": "varchar(30)",
+    "max_daily_amount_g": "decimal(10,2)"
+  }
+}

@@ -1,0 +1,17 @@
+# Disposable integration database. Never reuse this configuration for production.
+services:
+  db:
+    image: mariadb:11.8.9
+    environment:
+      MARIADB_ROOT_PASSWORD: integration-only
+    ports:
+      - '127.0.0.1:3307:3306'
+    command:
+      - --log-bin=integration-binlog
+      - --binlog-format=ROW
+      - --log-bin-trust-function-creators=0
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 2s
+      timeout: 5s
+      retries: 30

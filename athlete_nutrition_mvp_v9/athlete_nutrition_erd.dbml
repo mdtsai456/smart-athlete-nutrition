@@ -1,0 +1,719 @@
+// ============================================================
+// 職業運動員營養管理平台
+// Formal ERD - MVP v9 production baseline
+// Total: 16 Tables
+// Target DB: MariaDB 11.8 (InnoDB)
+// Full blueprint (27 tables): athlete_nutrition_erd_full.dbml
+// ============================================================
+//
+// Conventions
+// - 時效表 (start_date / end_date) 一律：
+//   1. check end_date IS NULL OR end_date >= start_date
+//   2. 同一主體期間不可重疊 → 寫入需明確交易；migration 鎖定 Athlete 後檢查重疊
+// - 所有時間點使用 datetime(6)，以 UTC 儲存；連線時區設為 +00:00
+// - 食物與餐點重量單位為 g；體重為 kg
+// - DBML 無法表達的跨組織、時區、email 與重疊規則見 athlete_nutrition_mariadb.sql
+// - MealItem triggers 原子寫入 snapshot；snapshot_nutrient_count 保存當時計算列數
+// - API 透過 SQL command procedures 寫入；runtime 不可直接 DML 餐點／snapshot
+// - 使用方式與權限見 production_guide.md、permissions.sql
+// - status 值：
+//   - Account: active / suspended / disabled
+//   - 組織與主檔: active / inactive
+//   - MealRecord: draft / submitted / reviewed
+//
+// 權限 (app 層；資料關聯另由 migration 防止跨組織)
+// - 資料以 Account.organization_id 隔離，跨組織不可見
+// - 營養師: 管理同組織所有運動員
+// - 教練: 唯讀，僅有效 AthleteCoach 的運動員，僅摘要資料
+// - 組織 admin: 管理同組織帳號、指派 AthleteCoach
+// - 寫入者須 active；draft 由本人或營養師修改；submitted 僅營養師修正
+// - reviewed 需 nutritionist explicit reopen + 原因；禁止直接修改所有餐點子資料
+//
+// 擴充路徑 (皆為新增表 / nullable 欄位，見 full 版)
+// - 一二軍分隊    → Team, AthleteTeam (掛 Organization)
+// - 多運動項目    → Sport, Athlete.sport_id
+// - 團膳          → Menu, MenuItem
+// - 訓練/比賽日目標 → AthleteNutritionTarget.target_context
+//                    (default 'daily') + TeamSchedule
+// - 自家菜色      → Dish, DishIngredient, MealItem.dish_id
+// - 過敏自動偵測  → Allergen, FoodAllergen
+// - 營養師分組負責 → AthleteNutritionist
+// ============================================================
+
+
+// ============================================================
+// 0. 組織與帳號
+// ============================================================
+
+Table Organization {
+  organization_id bigint [pk, increment]
+
+  name varchar(150) [not null, unique]
+
+  status varchar(30) [not null]
+
+  created_at datetime(6) [not null]
+  updated_at datetime(6) [not null]
+
+  checks {
+    `status IN ('active', 'inactive')` [name: 'chk_organization_status']
+  }
+
+  Note: '''
+  One customer (球團) = one organization.
+  Tenant boundary for all data access.
+  '''
+}
+
+
+Table Account {
+  account_id bigint [pk, increment]
+
+  organization_id bigint
+
+  email varchar(255) [not null]
+  active_email varchar(255) [note: 'Generated PERSISTENT by SQL: IF(status = disabled, NULL, email)']
+  password_hash varchar(255) [not null]
+
+  role varchar(30) [not null]
+  status varchar(30) [not null]
+
+  last_login_at datetime(6)
+  created_at datetime(6) [not null]
+  updated_at datetime(6) [not null]
+
+  indexes {
+    organization_id
+    email
+    active_email [unique]
+  }
+
+  checks {
+    `role IN ('athlete', 'nutritionist', 'coach', 'admin')` [name: 'chk_account_role']
+
+    `status IN ('active', 'suspended', 'disabled')` [name: 'chk_account_status']
+
+    `role = 'admin' OR organization_id IS NOT NULL` [name: 'chk_account_organization_required']
+  }
+
+  Note: '''
+  One account = one role.
+  App layer must ensure the matching profile row
+  (Athlete / Nutritionist / Coach) exists only for that role.
+  Migration prevents changing role / organization_id after creation.
+
+  admin:
+  - organization_id set  → organization admin
+  - organization_id NULL → platform admin
+
+  email uniqueness:
+  Migration adds generated active_email
+  (NULL when status = 'disabled') with a unique key,
+  so email is unique among non-disabled accounts only.
+  Login looks up status <> 'disabled' accounts only.
+  suspended accounts still reserve their email.
+
+  Player transfer to another organization:
+  1. disable the old account (history stays with the old org)
+  2. create a new account with the same email in the new org
+  Health data never moves between organizations; sharing past
+  data requires the athlete's consent via an exported report.
+  '''
+}
+
+
+// ============================================================
+// 1. 人員
+// ============================================================
+
+Table Athlete {
+  athlete_id bigint [pk, increment]
+
+  account_id bigint [not null, unique]
+
+  name varchar(100) [not null]
+
+  birth_date date
+  gender varchar(30)
+  weight_kg decimal(6,2)
+
+  created_at datetime(6) [not null]
+  updated_at datetime(6) [not null]
+
+  checks {
+    `weight_kg IS NULL OR weight_kg > 0` [name: 'chk_athlete_weight_positive']
+  }
+
+  Note: '''
+  Organization = Account.organization_id.
+  weight_kg stores current body weight only; no weight history in this design.
+  Migration validates account role and organization on profile writes.
+  '''
+}
+
+
+
+
+Table Nutritionist {
+  nutritionist_id bigint [pk, increment]
+
+  account_id bigint [not null, unique]
+
+  name varchar(100) [not null]
+
+  created_at datetime(6) [not null]
+  updated_at datetime(6) [not null]
+
+  Note: '''
+  Manages all athletes in the same organization.
+  '''
+}
+
+
+Table Coach {
+  coach_id bigint [pk, increment]
+
+  account_id bigint [not null, unique]
+
+  name varchar(100) [not null]
+
+  created_at datetime(6) [not null]
+  updated_at datetime(6) [not null]
+}
+
+
+Table AthleteCoach {
+  athlete_coach_id bigint [pk, increment]
+
+  athlete_id bigint [not null]
+  coach_id bigint [not null]
+
+  start_date date [not null]
+  end_date date
+
+  indexes {
+    coach_id
+
+    (athlete_id, coach_id, start_date) [unique]
+  }
+
+  checks {
+    `end_date IS NULL OR end_date >= start_date` [name: 'chk_athlete_coach_dates']
+  }
+
+  Note: '''
+  Coach read access = active AthleteCoach rows only.
+  Coaches see summary nutrition data only (app layer).
+  Athlete and coach must be in the same organization (migration).
+  Assigned by organization admin.
+
+  Migration locks Athlete and checks inclusive date overlap.
+  '''
+}
+
+
+// ============================================================
+// 2. 食物與營養素
+// ============================================================
+
+Table Food {
+  food_id bigint [pk, increment]
+
+  organization_id bigint
+  source_scope_id bigint [note: 'Generated PERSISTENT by SQL: IFNULL(organization_id, 0)']
+
+  food_name varchar(150) [not null]
+  brand varchar(150)
+  food_type varchar(100)
+  description text
+
+  source varchar(100)
+  source_food_code varchar(100)
+
+  density_g_per_ml decimal(8,4)
+
+  status varchar(30) [not null]
+
+  created_at datetime(6) [not null]
+  updated_at datetime(6) [not null]
+
+  indexes {
+    organization_id
+    (source_scope_id, source, source_food_code) [unique]
+    food_name
+  }
+
+  checks {
+    `(source IS NULL) = (source_food_code IS NULL)` [name: 'chk_food_source_pair']
+
+    `density_g_per_ml IS NULL OR density_g_per_ml > 0` [name: 'chk_food_density_positive']
+
+    `status IN ('active', 'inactive')` [name: 'chk_food_status']
+  }
+
+  Note: '''
+  organization_id:
+  - NULL → shared food database (e.g. TFDA import)
+  - set  → organization custom food
+           (supplements, sports drinks, energy gels …
+            entered from nutrition label)
+
+  source / source_food_code:
+  external database name + its food code.
+  Source-agnostic; enables idempotent re-import (upsert).
+  Migration adds a generated scope key and unique index for
+  source codes shared globally or scoped per organization.
+  organization_id is immutable after creation.
+
+  Mixed dishes: use prepared-food entries from the source
+  database as Food rows (no Dish table in MVP).
+
+  Liquids: UI converts ml → g using density_g_per_ml.
+  '''
+}
+
+
+Table Nutrient {
+  nutrient_id bigint [pk, increment]
+
+  nutrient_code varchar(50) [unique]
+  nutrient_name varchar(100) [not null, unique]
+  unit varchar(30) [not null]
+
+  status varchar(30) [not null]
+
+  checks {
+    `status IN ('active', 'inactive')` [name: 'chk_nutrient_status']
+  }
+
+  Note: '''
+  nutrient_code: external reference code (e.g. TFDA / USDA).
+  Energy is modeled as a nutrient (unit kcal).
+  unit is immutable after creation; create a new nutrient for a
+  different unit so historical snapshots retain their meaning.
+  '''
+}
+
+
+Table FoodNutrient {
+  food_nutrient_id bigint [pk, increment]
+
+  food_id bigint [not null]
+  nutrient_id bigint [not null]
+
+  amount_per_100g decimal(12,4) [not null]
+
+  source varchar(255)
+  source_version varchar(100)
+  calculation_method varchar(255)
+
+  updated_at datetime(6) [not null]
+
+  indexes {
+    nutrient_id
+
+    (food_id, nutrient_id) [unique]
+  }
+
+  checks {
+    `amount_per_100g >= 0` [name: 'chk_food_nutrient_amount_non_negative']
+  }
+
+  Note: '''
+  Current values only (overwrite on update).
+  Historical intake is frozen in MealItemNutrient.
+  '''
+}
+
+
+// ============================================================
+// 3. 運動員實際飲食
+// ============================================================
+
+Table MealRecord {
+  meal_record_id bigint [pk, increment]
+
+  athlete_id bigint [not null]
+
+  consumed_at datetime(6) [not null]
+  local_date date [not null]
+  timezone varchar(50) [not null]
+
+  meal_type varchar(50) [not null]
+
+  note text
+  status varchar(30) [not null]
+
+  created_by_account_id bigint [not null]
+  status_changed_by_account_id bigint
+  status_changed_at datetime(6)
+  status_change_reason varchar(500)
+
+  created_at datetime(6) [not null]
+  updated_at datetime(6) [not null]
+
+  indexes {
+    (athlete_id, consumed_at)
+    (athlete_id, local_date)
+  }
+
+  checks {
+    `(status = 'draft' AND status_changed_by_account_id IS NULL AND status_changed_at IS NULL AND status_change_reason IS NULL) OR (status IN ('submitted', 'reviewed') AND status_changed_by_account_id IS NOT NULL AND status_changed_at IS NOT NULL)` [name: 'chk_meal_status_metadata']
+
+    `meal_type IN ('breakfast', 'lunch', 'dinner', 'snack', 'pre_training', 'post_training')` [name: 'chk_meal_record_meal_type']
+
+    `status IN ('draft', 'submitted', 'reviewed')` [name: 'chk_meal_record_status']
+
+    `timezone LIKE '%/%' OR timezone = 'UTC'` [name: 'chk_meal_record_timezone_iana']
+  }
+
+  Note: '''
+  timezone: IANA name (e.g. Asia/Taipei); offsets like +08:00 rejected
+  because they ignore DST.
+  local_date = consumed_at in timezone → day boundary for daily targets.
+  Migration validates timezone with CONVERT_TZ (requires loaded time-zone tables).
+  On consumed_at / timezone edits, update local_date in the same write.
+  Creator and created_at are immutable. New creators and current actors must be active.
+  Updates authorize the current actor, never the historic creator.
+  status_changed_by_account_id / status_changed_at record the most recent transition.
+  status_change_reason is required to reopen; use an external audit log for a full transition history.
+
+  meal_type: game-day pre/post meals use pre_training / post_training.
+
+  status flow:
+  - draft: editable by the active athlete or same-org nutritionist
+  - submitted: at least one item, all confirmed/rejected, no queued/running analyses, complete snapshots
+  - reviewed: active nutritionist review, final until explicit reopen
+  - reviewed -> submitted: active nutritionist, nonblank reason; preserves creator and content
+  Forward transitions and final child immutability are enforced by SQL triggers.
+  '''
+}
+
+
+Table MealImage {
+  meal_image_id bigint [pk, increment]
+
+  meal_record_id bigint [not null]
+
+  object_key varchar(500) [not null]
+  mime_type varchar(100)
+
+  uploaded_at datetime(6) [not null]
+
+  indexes {
+    meal_record_id
+  }
+}
+
+
+Table MealItem {
+  meal_item_id bigint [pk, increment]
+
+  meal_record_id bigint [not null]
+  meal_analysis_id bigint
+
+  food_id bigint
+  detected_label varchar(255)
+
+  estimated_weight_g decimal(10,2)
+  confirmed_weight_g decimal(10,2)
+
+  weight_source varchar(50)
+  confirmation_status varchar(30) [not null]
+  snapshot_nutrient_count int [not null, default: 0, note: 'SQL type is INT UNSIGNED; set by triggers']
+
+  confirmed_by_account_id bigint
+  confirmed_at datetime(6)
+
+  created_at datetime(6) [not null]
+  updated_at datetime(6) [not null]
+
+  indexes {
+    meal_record_id
+    meal_analysis_id
+    food_id
+  }
+
+  checks {
+    `food_id IS NOT NULL OR detected_label IS NOT NULL` [name: 'chk_meal_item_food_or_label']
+
+    `confirmation_status <> 'confirmed' OR food_id IS NOT NULL` [name: 'chk_meal_item_confirmed_food']
+
+    `confirmation_status IN ('pending', 'confirmed', 'rejected')` [name: 'chk_meal_item_confirmation_status']
+
+    `weight_source IS NULL OR weight_source IN ('ai', 'measured', 'manual')` [name: 'chk_meal_item_weight_source']
+
+    `(confirmation_status = 'confirmed' AND confirmed_weight_g IS NOT NULL AND weight_source IS NOT NULL AND confirmed_by_account_id IS NOT NULL AND confirmed_at IS NOT NULL AND snapshot_nutrient_count > 0) OR (confirmation_status IN ('pending', 'rejected') AND confirmed_weight_g IS NULL AND weight_source IS NULL AND confirmed_by_account_id IS NULL AND confirmed_at IS NULL AND snapshot_nutrient_count = 0)` [name: 'chk_meal_item_confirmed_complete']
+
+    `estimated_weight_g IS NULL OR estimated_weight_g > 0` [name: 'chk_meal_item_estimated_weight_positive']
+
+    `confirmed_weight_g IS NULL OR confirmed_weight_g > 0` [name: 'chk_meal_item_confirmed_weight_positive']
+  }
+
+  Note: '''
+  estimated_weight_g: AI estimate.
+  confirmed_weight_g: final accepted weight.
+
+  detected_label: AI label when no Food match yet.
+  Item must be mapped to a Food before confirmation.
+
+  meal_analysis_id: NULL for manually added items.
+
+  Snapshot rule (SQL triggers, same transaction as the MealItem write):
+  - becomes 'confirmed', or a confirmed item's food_id /
+    confirmed_weight_g changes → delete + rebuild MealItemNutrient
+    amount = FoodNutrient.amount_per_100g × confirmed_weight_g / 100
+  - leaves 'confirmed' → delete MealItemNutrient rows
+  - Food without FoodNutrient rows cannot be confirmed
+  - confirmed requires food, weight, weight_source, confirmer and time
+  - pending/rejected require all confirmation metadata NULL, expected count 0
+  - snapshot_nutrient_count captures all nutrient rows, including zeros and inactive nutrients
+  View mvp_snapshot_mismatch checks the historical expected count, not the current catalog.
+  Identical mvp_confirm_item retries preserve the original snapshot.
+  '''
+}
+
+
+Table MealItemNutrient {
+  meal_item_nutrient_id bigint [pk, increment]
+
+  meal_item_id bigint [not null]
+  nutrient_id bigint [not null]
+
+  amount decimal(12,4) [not null]
+
+  calculated_at datetime(6) [not null]
+
+  indexes {
+    nutrient_id
+
+    (meal_item_id, nutrient_id) [unique]
+  }
+
+  checks {
+    `amount >= 0` [name: 'chk_meal_item_nutrient_amount_non_negative']
+  }
+
+  Note: '''
+  Snapshot of intake at confirmation time, in immutable Nutrient.unit.
+  Immune to later FoodNutrient changes.
+  All intake reports / history read from this table.
+  Written only by MealItem triggers. Runtime roles have no direct snapshot DML.
+  Snapshot amounts round to 4 decimal places. Food-row locks serialize catalog writers.
+  Changing accepted food/weight explicitly rebuilds a snapshot. Catalog edits never do so.
+  Reviewed snapshots are immutable until explicit reopen.
+  '''
+}
+
+
+// ============================================================
+// 4. AI 餐點分析
+// ============================================================
+
+Table MealAnalysis {
+  meal_analysis_id bigint [pk, increment]
+
+  meal_record_id bigint [not null]
+
+  model_name varchar(150) [not null]
+  model_version varchar(100)
+
+  status varchar(30) [not null]
+
+  raw_result_json json
+  error_message text
+
+  started_at datetime(6)
+  completed_at datetime(6)
+  created_at datetime(6) [not null]
+
+  indexes {
+    meal_record_id
+    status
+  }
+
+  checks {
+    `(started_at IS NULL OR started_at >= created_at) AND (completed_at IS NULL OR completed_at >= started_at)` [name: 'chk_analysis_time_order']
+
+    `(status = 'queued' AND started_at IS NULL AND completed_at IS NULL AND error_message IS NULL AND raw_result_json IS NULL) OR (status = 'running' AND started_at IS NOT NULL AND completed_at IS NULL AND error_message IS NULL AND raw_result_json IS NULL) OR (status = 'succeeded' AND started_at IS NOT NULL AND completed_at IS NOT NULL AND error_message IS NULL AND raw_result_json IS NOT NULL) OR (status = 'failed' AND started_at IS NOT NULL AND completed_at IS NOT NULL AND error_message IS NOT NULL AND CHAR_LENGTH(TRIM(error_message)) > 0 AND raw_result_json IS NULL)` [name: 'chk_analysis_lifecycle']
+
+    `status IN ('queued', 'running', 'succeeded', 'failed')` [name: 'chk_meal_analysis_status']
+  }
+
+  Note: '''
+  Multiple analyses per meal allowed (retries / model upgrades).
+  Image mapping / bounding boxes live in raw_result_json.
+  queued -> running -> succeeded/failed; queued -> failed handles dispatch failures.
+  queued: no start/end/result/error; running: start only.
+  succeeded: start/end/result, no error; failed: start/end/nonblank error, no result.
+  Time order is checked. Terminal rows are immutable; retries create new analysis IDs.
+  Worker routines have separate EXECUTE permissions.
+  '''
+}
+
+
+// ============================================================
+// 5. 營養管理
+// ============================================================
+
+Table AthleteNutritionTarget {
+  target_id bigint [pk, increment]
+
+  athlete_id bigint [not null]
+  nutritionist_id bigint [not null]
+  nutrient_id bigint [not null]
+
+  target_basis varchar(20) [not null]
+
+  target_min decimal(12,4)
+  target_max decimal(12,4)
+
+  start_date date [not null]
+  end_date date
+
+  indexes {
+    nutritionist_id
+    nutrient_id
+
+    (athlete_id, nutrient_id, start_date) [unique]
+  }
+
+  checks {
+    `target_basis IN ('absolute', 'per_kg_bw')` [name: 'chk_nutrition_target_basis']
+
+    `target_min IS NOT NULL OR target_max IS NOT NULL` [name: 'chk_nutrition_target_has_value']
+
+    `target_min IS NULL OR target_max IS NULL OR target_min <= target_max` [name: 'chk_nutrition_target_range']
+
+    `end_date IS NULL OR end_date >= start_date` [name: 'chk_nutrition_target_dates']
+  }
+
+  Note: '''
+  Daily target, in Nutrient.unit.
+  per_kg_bw: value × Athlete.weight_kg.
+  If Athlete.weight_kg is NULL, report target as unavailable.
+  nutritionist_id = who set this target.
+
+  Intolerance limits (e.g. lactose) are modeled here
+  as target_max on the nutrient, not as restrictions.
+
+  Migration locks Athlete and checks inclusive date overlap.
+  '''
+}
+
+
+Table AthleteFoodRestriction {
+  restriction_id bigint [pk, increment]
+
+  athlete_id bigint [not null]
+  food_id bigint
+  nutritionist_id bigint [not null]
+
+  restriction_type varchar(50) [not null]
+  max_amount_g decimal(10,2)
+
+  description text
+  note text
+
+  start_date date [not null]
+  end_date date
+
+  indexes {
+    food_id
+    nutritionist_id
+
+    (athlete_id, food_id, start_date) [unique]
+  }
+
+  checks {
+    `food_id IS NOT NULL OR NULLIF(TRIM(description), '') IS NOT NULL` [name: 'chk_food_restriction_target']
+
+    `food_id IS NOT NULL OR restriction_type = 'prohibited'` [name: 'chk_food_restriction_free_text_type']
+
+    `restriction_type IN ('prohibited', 'limited')` [name: 'chk_food_restriction_type']
+
+    `( restriction_type = 'limited' AND food_id IS NOT NULL AND max_amount_g IS NOT NULL AND max_amount_g > 0 ) OR (restriction_type = 'prohibited' AND max_amount_g IS NULL)` [name: 'chk_food_restriction_limit']
+
+    `end_date IS NULL OR end_date >= start_date` [name: 'chk_food_restriction_dates']
+  }
+
+  Note: '''
+  Two forms:
+  - food_id set: restriction on one specific Food
+  - food_id NULL: free-text restriction in description
+    (e.g. 「所有花生製品」), always 'prohibited',
+    enforced manually by nutritionist
+
+  max_amount_g: per day, day boundary = MealRecord.local_date.
+
+  note is sensitive health data: never exposed to coaches.
+
+  Migration locks Athlete and checks overlap for food_id IS NOT NULL.
+  '''
+}
+
+
+// ============================================================
+// Relationships
+// ============================================================
+
+
+// Organization / Account
+
+Ref: Account.organization_id > Organization.organization_id
+
+
+// Account / Roles (1:1)
+
+Ref: Athlete.account_id - Account.account_id
+Ref: Nutritionist.account_id - Account.account_id
+Ref: Coach.account_id - Account.account_id
+
+
+// Athlete profile
+
+
+Ref: AthleteCoach.athlete_id > Athlete.athlete_id
+Ref: AthleteCoach.coach_id > Coach.coach_id
+
+
+// Food / Nutrient
+
+Ref: Food.organization_id > Organization.organization_id
+
+Ref: FoodNutrient.food_id > Food.food_id
+Ref: FoodNutrient.nutrient_id > Nutrient.nutrient_id
+
+
+// Actual Meal
+
+Ref: MealRecord.athlete_id > Athlete.athlete_id
+Ref: MealRecord.created_by_account_id > Account.account_id
+
+Ref: MealImage.meal_record_id > MealRecord.meal_record_id [delete: cascade]
+
+Ref: MealItem.meal_record_id > MealRecord.meal_record_id [delete: cascade]
+Ref: MealItem.meal_analysis_id > MealAnalysis.meal_analysis_id [delete: set null]
+Ref: MealItem.food_id > Food.food_id
+Ref: MealItem.confirmed_by_account_id > Account.account_id
+
+Ref: MealItemNutrient.meal_item_id > MealItem.meal_item_id [delete: cascade]
+Ref: MealItemNutrient.nutrient_id > Nutrient.nutrient_id
+
+
+// AI Analysis
+
+Ref: MealAnalysis.meal_record_id > MealRecord.meal_record_id [delete: cascade]
+
+
+// Nutrition Management
+
+Ref: AthleteNutritionTarget.athlete_id > Athlete.athlete_id
+Ref: AthleteNutritionTarget.nutritionist_id > Nutritionist.nutritionist_id
+Ref: AthleteNutritionTarget.nutrient_id > Nutrient.nutrient_id
+
+Ref: AthleteFoodRestriction.athlete_id > Athlete.athlete_id
+Ref: AthleteFoodRestriction.food_id > Food.food_id
+Ref: AthleteFoodRestriction.nutritionist_id > Nutritionist.nutritionist_id
+
+Ref: MealRecord.status_changed_by_account_id > Account.account_id

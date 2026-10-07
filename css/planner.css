@@ -1,4 +1,4 @@
-/* 每日營養目標：分配表單、驗算結果及運動員摘要。 */
+/* 每日營養目標的表單、驗算結果與運動員摘要。 */
 .planner-context {
   display: flex;
   justify-content: space-between;
@@ -355,11 +355,11 @@ readable,
 and separate from allocation inputs. */
 .athlete-summary {
   background: #fff;
-  border: 1px solid #dce6f0;
-  border-radius: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
   padding: 24px 28px;
   margin-bottom: 24px;
-  box-shadow: 0 5px 22px #173b6410;
+  box-shadow: var(--card-shadow);
 }
 .athlete-summary-head,
 .athlete-identity {
@@ -516,7 +516,7 @@ and separate from allocation inputs. */
   padding: 12px 26px 24px;
 }
 .planner-summary {
-  box-shadow: 0 6px 24px #143c6810;
+  box-shadow: 0 6px 18px #143c6838;
 }
 .unit-input:focus-within {
   border-color: #5796c8;

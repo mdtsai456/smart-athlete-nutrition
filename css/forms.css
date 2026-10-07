@@ -11,6 +11,9 @@ dialog {
 dialog.wide {
   width: 650px;
 }
+dialog.import-dialog {
+  width: 920px;
+}
 dialog::backdrop {
   background: #102c4c66;
   backdrop-filter: blur(3px);
@@ -176,7 +179,7 @@ dialog > .record-photo {
   opacity: 1;
   transform: translate(-50%, 0);
 }
-/* Photo and confirmation workflows share the reference's two-column layout. */
+/* 拍照與確認使用兩欄配置。 */
 dialog.record-dialog {
   width: 1040px;
 }
@@ -197,9 +200,85 @@ dialog.record-dialog {
   font-size: 14px;
   margin-bottom: 10px;
 }
+.record-layout .meal-picker {
+  margin-top: 0;
+}
+.record-meal-actions {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+.record-layout .data-row {
+  align-items: flex-start;
+}
+.record-layout .item-actions {
+  margin-top: 2px;
+}
+.meal-picker {
+  margin: 14px 0 12px;
+  padding: 10px 12px 12px;
+  border: 1px solid #9ec0de;
+  border-radius: 10px;
+  background: #f4f9fd;
+}
+.meal-picker legend {
+  padding: 0 4px;
+  font-size: 13px;
+  color: var(--primary);
+}
+.meal-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.meal-option {
+  position: relative;
+}
+.meal-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.meal-option span {
+  display: inline-block;
+  padding: 7px 14px;
+  border: 1px solid #9ec0de;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--primary);
+  font-size: 14px;
+  cursor: pointer;
+}
+.meal-option input:checked + span {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.meal-option input:focus-visible + span {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
 .record-layout .notice {
   font-size: 13px;
   margin-top: 20px;
+}
+.analysis-error {
+  margin: 12px 0;
+  padding: 12px 15px;
+  border: 1px solid #a94242;
+  border-radius: 6px;
+  background: #fceeee;
+  color: #a94242;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.analysis-error-tag {
+  color: #a94242;
+  border: 1px solid #a94242;
+  border-radius: 6px;
+  padding: 1px 6px;
 }
 .record-layout form {
   margin: 0;
@@ -241,6 +320,60 @@ dialog.record-dialog {
 .record-layout .nutrition-preview {
   grid-template-columns: repeat(2, 1fr);
   row-gap: 20px;
+}
+.plate-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: calc(100dvh - 360px);
+  min-height: 280px;
+  padding-bottom: 16px;
+}
+.plate-page .actions {
+  margin-top: 0;
+  flex: 0 0 auto;
+}
+.plate-camera {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #d7e6f1;
+}
+.plate-camera video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background: #d7e6f1;
+}
+dialog .plate-camera {
+  height: 240px;
+  flex: none;
+}
+.plate-frame {
+  position: absolute;
+  inset: 14% 18%;
+  border: 3px solid #fff;
+  border-radius: 28px;
+  box-shadow: 0 0 0 999px #102c4c59;
+  pointer-events: none;
+}
+.plate-camera p {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #102c4ccc;
+  color: #fff;
+  font-size: 13px;
+  white-space: nowrap;
 }
 @media (max-width: 850px) {
   .record-layout {
@@ -311,33 +444,105 @@ dialog.record-dialog {
   font-size: 13px;
   margin-bottom: 24px;
 }
-.profile-save,
-.profile-shortcut {
+.profile-save {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-}
-.profile-save {
   border-top: 1px solid var(--border);
   padding-top: 20px;
   margin-top: 20px;
-}
-.profile-shortcut {
-  margin-bottom: 20px;
-  color: var(--muted);
-  font-size: 13px;
 }
 @media (max-width: 650px) {
   .profile-page {
     padding: 20px;
   }
-  .profile-save,
-  .profile-shortcut {
+  .profile-save {
     align-items: stretch;
     flex-direction: column;
   }
 }
 .context-bar[hidden] {
   display: none;
+}
+.correction {
+  margin: 0 24px 20px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.correction > p {
+  color: #667c93;
+}
+.correction form {
+  margin-left: 0;
+  margin-right: 0;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.correction .actions {
+  margin-top: 8px;
+}
+.import-preview {
+  margin: 16px 24px;
+  max-height: 52vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.import-preview h3 {
+  margin: 12px 0 4px;
+  font-size: 13px;
+}
+.import-preview table {
+  width: 40em;
+  max-width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  border-collapse: collapse;
+  white-space: normal;
+}
+.import-preview table.with-reason {
+  width: 100%;
+}
+.import-preview th,
+.import-preview td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+.import-preview th:nth-child(1),
+.import-preview td:nth-child(1) {
+  width: 3em;
+}
+.import-preview th:nth-child(2),
+.import-preview td:nth-child(2) {
+  width: 7.5em;
+}
+.import-preview th:nth-child(3),
+.import-preview td:nth-child(3) {
+  width: 6em;
+}
+.import-preview th:nth-child(4),
+.import-preview td:nth-child(4) {
+  width: 23em;
+}
+.import-preview th:nth-child(5),
+.import-preview td:nth-child(5) {
+  width: auto;
+  white-space: normal;
+}
+.import-preview .import-reason,
+.import-preview .import-error {
+  color: #a94242;
+}
+.import-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 24px 20px;
 }
