@@ -1,7 +1,8 @@
 /**
  * 載入頁面資料、導覽與對話框。
- * 攝影機、匯入菜色與修正餐點的按鈕在這裡。
+ * 此模組處理攝影機、菜色匯入與餐點修正的按鈕事件。
  */
+import { mealImage } from "../components/meal-image.js";
 import { athleteDetails } from "../components/athlete-card.js";
 import { header, pageHeader } from "../components/header.js";
 import { closeDialog as closeModal, modal } from "../components/modal.js";
@@ -254,11 +255,13 @@ function recordStart(playerId = state.data?.athleteId || "p1", kiosk = false) {
     document.querySelector("#dialog-plate-note"),
   );
 }
-/** 讀取餐點。分析中且沒有指定結果時，這次讀取會完成佔位辨識。 */
+/** 讀取餐點並更新畫面，不啟動分析。 */
 async function renderRecord() {
   releaseExtraCamera();
-  const view = await readMeal(recordDraft.mealId);
-  if (!recordDraft) return;
+  const draft = recordDraft;
+  if (!draft) return;
+  const view = await readMeal(draft.mealId);
+  if (recordDraft !== draft) return;
   recordDraft.view = view;
   recordDraft.revision = view.revision;
   const selected = recordDraft.mealType || view.mealType || "lunch";
@@ -287,7 +290,7 @@ async function renderRecord() {
       : "";
   modal(
     "確認餐點與營養份量",
-    `<div class="record-layout"><section><h3>餐盤影像</h3><div class="photo-placeholder">${icon("camera")}<strong>影像已另外存放</strong><span>${esc(view.image?.objectKey || "尚未上傳")}</span></div><p class="footnote">${esc(recordDraft.stage)} · ${esc(view.analysis?.statusLabel || "尚無分析")}</p></section><section><h3>餐點確認結果</h3>${mealPicker(selected, "record-form")}<div class="actions record-meal-actions">${view.items.some((item) => item.confirmationStatus === "pending" && item.foodId) ? button("全部確認", "confirm-all") : ""}${button("重新拍攝", "retake")}</div><p class="muted">待確認項目還不計入攝取。確認後才計入這一餐。送出時把這一版固定下來，不會另外重建項目。</p>${analysisNote ? `<p class="analysis-error">${esc(analysisNote)}</p>` : ""}<div id="record-items">${items}</div>${manualAdd}<form id="record-form" data-form="record"><div id="nutrition-preview" class="nutrition-preview" aria-live="polite"><div><strong>${nutrition.calories}</strong><span>kcal 已確認熱量</span></div><div><strong>${nutrition.protein}g</strong><span>蛋白質</span></div><div><strong>${nutrition.carbs}g</strong><span>碳水化合物</span></div><div><strong>${nutrition.fat}g</strong><span>脂肪</span></div></div><div class="form-error" role="alert"></div><div class="modal-footer">${button("取消", "close")}<button type="submit" class="btn primary" ${view.canSubmit ? "" : "disabled"}>${icon("check")} 送出餐點</button></div></form></section></div>`,
+    `<div class="record-layout"><section><h3>餐盤影像</h3>${mealImage(view.image)}<p class="footnote">${esc(recordDraft.stage)} · ${esc(view.analysis?.statusLabel || "尚無分析")}</p></section><section><h3>餐點確認結果</h3>${mealPicker(selected, "record-form")}<div class="actions record-meal-actions">${view.items.some((item) => item.confirmationStatus === "pending" && item.foodId) ? button("全部確認", "confirm-all") : ""}${button("重新拍攝", "retake")}</div><p class="muted">待確認項目還不計入攝取。確認後才計入這一餐。送出時把這一版固定下來，不會另外重建項目。</p>${analysisNote ? `<p class="analysis-error">${esc(analysisNote)}</p>` : ""}<div id="record-items">${items}</div>${manualAdd}<form id="record-form" data-form="record"><div id="nutrition-preview" class="nutrition-preview" aria-live="polite"><div><strong>${nutrition.calories}</strong><span>kcal 已確認熱量</span></div><div><strong>${nutrition.protein}g</strong><span>蛋白質</span></div><div><strong>${nutrition.carbs}g</strong><span>碳水化合物</span></div><div><strong>${nutrition.fat}g</strong><span>脂肪</span></div></div><div class="form-error" role="alert"></div><div class="modal-footer">${button("取消", "close")}<button type="submit" class="btn primary" ${view.canSubmit ? "" : "disabled"}>${icon("check")} 送出餐點</button></div></form></section></div>`,
     true,
   );
   document.querySelector("#dialog").classList.add("record-dialog");
@@ -400,29 +403,10 @@ async function action(name, id) {
       const queued = await queueMealAnalysis(draft.mealId, draft.revision);
       if (recordDraft !== draft) return;
       draft.revision = queued.revision;
-      // 指定結果要等狀態變成分析中再寫入。中間不能再讀一次，否則會改走佔位辨識。
-      if (demoOutcome) {
-        const started = await readMeal(draft.mealId);
-        if (recordDraft !== draft) return;
-        draft.revision = started.revision;
-        const finished = await finishMealAnalysis(draft.mealId, demoOutcome);
-        if (recordDraft !== draft) return;
-        draft.revision = finished.revision;
-        draft.stage = recognitionStage(finished.analysis);
-        return renderRecord();
-      }
-      for (let step = 0; step < 4 && recordDraft === draft; step += 1) {
-        const view = await readMeal(draft.mealId);
-        if (recordDraft !== draft) return;
-        draft.revision = view.revision;
-        draft.stage = view.analysis?.statusLabel || "分析中";
-        await renderRecord();
-        if (recordDraft !== draft) return;
-        const status = draft.view?.analysis?.status;
-        if (status === "succeeded" || status === "failed") break;
-      }
+      const finished = await finishMealAnalysis(draft.mealId, demoOutcome);
       if (recordDraft !== draft) return;
-      draft.stage = recognitionStage(draft.view?.analysis);
+      draft.revision = finished.revision;
+      draft.stage = recognitionStage(finished.analysis);
       return renderRecord();
     } finally {
       draft.recognizing = false;
@@ -435,7 +419,7 @@ async function action(name, id) {
       toast("請先選擇菜色");
       return;
     }
-    const confirmed = await confirmMealItem(
+    const confirmed = await confirmMealItem(recordDraft.mealId,
       id,
       picked ? { foodId: picked, weightSource: "manual" } : {},
       recordDraft.revision,
@@ -444,7 +428,7 @@ async function action(name, id) {
     return renderRecord();
   }
   if (name === "reject-item" && recordDraft) {
-    const rejected = await rejectMealItem(id, "", recordDraft.revision);
+    const rejected = await rejectMealItem(recordDraft.mealId, id, "", recordDraft.revision);
     recordDraft.revision = rejected.revision;
     return renderRecord();
   }
@@ -456,7 +440,7 @@ async function action(name, id) {
         skipped = true;
         continue;
       }
-      const confirmed = await confirmMealItem(item.id, {}, recordDraft.revision);
+      const confirmed = await confirmMealItem(recordDraft.mealId, item.id, {}, recordDraft.revision);
       recordDraft.revision = confirmed.revision;
     }
     if (skipped) toast("尚未對應的項目要先選菜色");
@@ -466,7 +450,7 @@ async function action(name, id) {
     const record = state.data.records.find((item) => item.id === id);
     return modal(
       `${esc(record.player.name)} · ${record.meal}`,
-      `<div class="guide"><p>${record.date} ${record.time} · ${esc(record.statusLabel)}${record.analysis ? " · " + esc(record.analysis.statusLabel) : ""}</p>${record.reason ? `<p>重新開啟原因：${esc(record.reason)}</p>` : ""}<p>影像：${esc(record.image?.url || "已存放，網址由後端提供")}</p>${record.items.map((item) => `<p>${esc(item.name)} <strong>${item.grams ?? "—"} g</strong> · ${esc(item.confirmationLabel)}</p>`).join("")}<div class="notice">熱量 ${record.nutrition.calories} kcal · 蛋白質 ${record.nutrition.protein}g · 碳水 ${record.nutrition.carbs}g · 脂肪 ${record.nutrition.fat}g</div>${state.role === "nutritionist" && record.status === "submitted" ? `<div class="actions"><button type="button" class="btn" data-action="correct-meal" data-id="${record.id}">修正餐點</button><button type="button" class="btn primary" data-action="review-meal" data-id="${record.id}">審核通過</button></div>` : ""}${state.role === "nutritionist" && record.status === "reviewed" ? `<div class="actions"><button type="button" class="btn" data-action="reopen-meal" data-id="${record.id}">重新開啟</button></div>` : ""}</div>`,
+      `<div class="guide"><p>${record.date} ${record.time} · ${esc(record.statusLabel)}${record.analysis ? " · " + esc(record.analysis.statusLabel) : ""}</p>${record.reason ? `<p>重新開啟原因：${esc(record.reason)}</p>` : ""}${mealImage(record.image)}<p class="footnote">${record.image?.url ? "餐盤影像" : "範例預覽 · 實拍影像網址由後端提供"}</p>${record.items.map((item) => `<p>${esc(item.name)} <strong>${item.grams ?? "—"} g</strong> · ${esc(item.confirmationLabel)}</p>`).join("")}<div class="notice">熱量 ${record.nutrition.calories} kcal · 蛋白質 ${record.nutrition.protein}g · 碳水 ${record.nutrition.carbs}g · 脂肪 ${record.nutrition.fat}g</div>${state.role === "nutritionist" && record.status === "submitted" ? `<div class="actions"><button type="button" class="btn" data-action="correct-meal" data-id="${record.id}">修正餐點</button><button type="button" class="btn primary" data-action="review-meal" data-id="${record.id}">審核通過</button></div>` : ""}${state.role === "nutritionist" && record.status === "reviewed" ? `<div class="actions"><button type="button" class="btn" data-action="reopen-meal" data-id="${record.id}">重新開啟</button></div>` : ""}</div>`,
     );
   }
   if (name === "correct-meal" && state.role === "nutritionist") return openCorrection(id);
@@ -511,6 +495,16 @@ function bindEvents() {
     if (el) action(el.dataset.action, el.dataset.id).catch((error) => reportMealError(error));
   });
   document.addEventListener("change", async (event) => {
+    // 篩選已載入的紀錄，只更新頁面，不寫入餐點資料。
+    if (event.target.id === "record-player" || event.target.name === "record-meal") {
+      const target = event.target;
+      if (target.id === "record-player") state.recordPlayer = target.value;
+      else state.recordMeals = [...document.querySelectorAll('input[name="record-meal"]:checked')].map((el) => el.value);
+      paintPage();
+      // 重繪後保留鍵盤焦點，方便連續勾選餐別。
+      const controls = document.querySelectorAll('#record-player, input[name="record-meal"]');
+      [...controls].find((el) => el.id === target.id && el.value === target.value)?.focus();
+    }
     if (event.target.name === "meal" && recordDraft) {
       recordDraft.mealType = event.target.value;
     }
@@ -626,7 +620,7 @@ function bindEvents() {
               obj.expectedRevision,
             );
             if (!added.itemId) throw new Error("新增項目沒有寫入");
-            await confirmMealItem(
+            await confirmMealItem(obj.mealId,
               added.itemId,
               {
                 foodId: obj.foodId,
@@ -637,9 +631,9 @@ function bindEvents() {
               added.revision,
             );
           } else if (obj.intent === "reject") {
-            await rejectMealItem(obj.itemId, reason, obj.expectedRevision);
+            await rejectMealItem(obj.mealId, obj.itemId, reason, obj.expectedRevision);
           } else if (obj.intent === "delete") {
-            await deleteMealItem(obj.itemId, obj.expectedRevision, reason);
+            await deleteMealItem(obj.mealId, obj.itemId, obj.expectedRevision, reason);
             const after = await readMeal(obj.mealId);
             if (!after.items.length) {
               await render();
@@ -648,7 +642,7 @@ function bindEvents() {
               return;
             }
           } else {
-            const corrected = await confirmMealItem(
+            const corrected = await confirmMealItem(obj.mealId,
               obj.itemId,
               {
                 foodId: obj.foodId,
@@ -712,10 +706,7 @@ export async function startPage(page) {
     location.replace("/login/index.html");
     return;
   }
-  if (session && state.route === "login") {
-    location.replace(pageUrl(session.uiRole, homeRoute(session.uiRole)));
-    return;
-  }
+  // 登入頁允許已有 session 的使用者停留，供標題連結返回及切換帳號。
   if (session && page.role && session.uiRole !== page.role && state.route !== "kiosk") {
     location.replace(pageUrl(session.uiRole, homeRoute(session.uiRole)));
     return;

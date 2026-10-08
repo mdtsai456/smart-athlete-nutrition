@@ -1,9 +1,9 @@
 /**
  * 計算訓練日與休息日的蛋白質、脂肪、剩餘碳水與熱量。
- * 這裡不儲存。
+ * 此模組不儲存資料。
  */
 export const ENERGY_TOLERANCE = 5;
-// 畫面預設值可改。確認後的目標由營養師儲存。
+// 營養師可以修改預設值，並儲存確認後的目標。
 export const CARB_DAY_PRESETS = Object.freeze({ 訓練日: 6, 休息日: 4 });
 export function changePlanDay(input, training) {
   if (!Object.hasOwn(CARB_DAY_PRESETS, training))
@@ -15,6 +15,12 @@ export function shiftDate(iso, days) {
   const [year, month, day] = iso.split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
 }
+/** 取得指定球員與日期的最新計畫，不修改原始陣列。 */
+export function latestDailyPlan(plans, athleteId, date) {
+  return (plans || []).reduce((latest, row) =>
+    row.athleteId === athleteId && row.localDate === date &&
+    (!latest || row.revision > latest.revision) ? row : latest, null);
+}
 export function activeTargetRows(rows, athleteId, date) {
   return (rows || []).filter(
     (row) =>
@@ -23,7 +29,7 @@ export function activeTargetRows(rows, athleteId, date) {
       (row.endDate == null || row.endDate >= date),
   );
 }
-/** 當日計畫優先。沒有目標時是未設定，不是 0。每公斤目標需要體重。 */
+/** 優先使用當日計畫。沒有目標時，顯示未設定。不要將未設定的目標視為 0。計算每公斤目標時需要體重。 */
 export function resolveTarget(player, rows, date, dailyPlan) {
   if (dailyPlan?.target) return { ...dailyPlan.target, source: "daily" };
   const active = activeTargetRows(rows, player.id, date);
@@ -50,7 +56,7 @@ export function resolveTarget(player, rows, date, dailyPlan) {
 function gramsOf(row, weight) {
   return row.targetBasis === "per_kg_bw" ? row.targetMin * weight : row.targetMin;
 }
-/** 有當日計畫就打開該草稿。否則用期間政策當起始值。 */
+/** 有當日計畫時，載入該計畫的草稿。否則使用期間政策的預設值。 */
 export function planDraft(player, date) {
   if (player.dailyPlan?.localDate === date && player.dailyPlan.inputJson)
     return { ...player.dailyPlan.inputJson };
@@ -93,11 +99,17 @@ export function planDraft(player, date) {
     fatValue: fat.targetMin,
   };
 }
-/** 蛋白質與脂肪先扣，剩餘熱量換算碳水。合計與總熱量差超過 5 kcal 不能過。 */
+/** 先扣除蛋白質與脂肪的熱量，再將剩餘熱量換算為碳水。營養素合計與總熱量相差超過 5 kcal 時，驗證失敗。 */
+// 空白、null 與布林值不是營養數值。保留數字字串，供表單輸入使用。
+function inputNumber(value) {
+  if (typeof value !== "number" && typeof value !== "string") return NaN;
+  if (typeof value === "string" && !value.trim()) return NaN;
+  return Number(value);
+}
 export function calculatePlan(input) {
   const n = Object.fromEntries(
     ["weight", "calories", "proteinKg", "fatValue", "carbMinimum"].map(
-      (key) => [key, Number(input[key])],
+      (key) => [key, inputNumber(input[key])],
     ),
   );
   const errors = [],
@@ -124,12 +136,12 @@ export function calculatePlan(input) {
       : n.weight * n.fatValue;
   let protein = n.weight * n.proteinKg;
   let fat = fatFloor;
-  // 維持總熱量優先：蛋白質與脂肪扣除後，剩餘熱量每 4 kcal 換算 1 g 碳水。
+  // 扣除蛋白質與脂肪的熱量後，將剩餘熱量以每 4 kcal 換算為 1 g 碳水。
   let carbs = (n.calories - protein * 4 - fat * 9) / 4;
   if (input.manual) {
-    protein = Number(input.protein);
-    carbs = Number(input.carbs);
-    fat = Number(input.fat);
+    protein = inputNumber(input.protein);
+    carbs = inputNumber(input.carbs);
+    fat = inputNumber(input.fat);
     if ([protein, carbs, fat].some((v) => !Number.isFinite(v) || v < 0))
       errors.push("手動目標須為有效且不小於 0 的數字。");
   }

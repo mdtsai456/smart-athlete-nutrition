@@ -64,7 +64,6 @@ export async function request(path, { method = "GET", body, headers = {} } = {})
     if (response.status === 204) return null;
     return response.json();
   }
-  await new Promise((r) => setTimeout(r, 120));
   const [resource, id] = path.replace(/^\//, "").split("/");
   const db = read();
   if (!Array.isArray(db[resource])) throw new Error("找不到資料");

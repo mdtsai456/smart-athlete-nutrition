@@ -12,7 +12,7 @@ const KEYS = {
   fat: "fat",
 };
 const empty = () => ({ calories: 0, protein: 0, carbs: 0, fat: 0 });
-/** 用目前食物表的每 100 g 乘上重量。 */
+/** 將目前食物表中每 100 g 的營養值乘以食物重量，再除以 100。 */
 export function nutrition(items, foodNutrients) {
   const sum = empty();
   for (const item of items) {
@@ -26,7 +26,7 @@ export function nutrition(items, foodNutrients) {
   }
   return sum;
 }
-/** 用確認當下寫入的營養資料。之後改食物表不影響。 */
+/** 使用確認時儲存的營養資料。後續修改食物表不會影響此資料。 */
 export function nutritionFromSnapshots(itemIds, snapshots) {
   const sum = empty();
   const ids = new Set(itemIds);

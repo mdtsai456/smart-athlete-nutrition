@@ -1,11 +1,11 @@
 /**
  * 時間區段營養統計。
- * 達成率只計算有紀錄的日期。
+ * 達成率使用各日目標，只計算有紀錄且有目標的日期。
  * 達標日的熱量是目標的 80%–115%。
  * 達標日的蛋白質至少是目標的 80%。
  */
 import { MAIN_MEALS, mealHasItems } from "./dashboard.service.js";
-import { shiftDate } from "./target.service.js";
+import { latestDailyPlan, resolveTarget, shiftDate } from "./target.service.js";
 const empty = () => ({ calories: 0, protein: 0, carbs: 0, fat: 0 });
 
 export function datesInRange(start, end) {
@@ -43,7 +43,8 @@ function dayIntake(player, records, date) {
     (record) =>
       record.playerId === player.id &&
       record.date === date &&
-      record.status !== "draft",
+      record.status !== "draft" &&
+      mealHasItems(record),
   );
   const totals = meals.reduce((sum, record) => {
     const source = record.nutritionExact || record.nutrition || empty();
@@ -53,7 +54,9 @@ function dayIntake(player, records, date) {
   const recordedMeals = new Set(
     meals.map((record) => record.meal).filter((meal) => MAIN_MEALS.includes(meal)),
   ).size;
-  return { date, totals, recordedMeals, hasRecord: meals.length > 0 };
+  const target = resolveTarget(player, player.nutritionTargets, date,
+    latestDailyPlan(player.dailyPlans, player.id, date));
+  return { date, totals, target, recordedMeals, hasRecord: meals.length > 0 };
 }
 
 function rate(amount, target) {
@@ -89,22 +92,21 @@ function statusOf(row) {
   return ["進度良好", "green"];
 }
 
-/** 達成率只算有紀錄的日期。達標日的熱量是 80%–115%，蛋白質至少 80%。 */
+/** 各日使用當日計畫或有效的期間目標。達標日的熱量是 80%–115%，蛋白質至少 80%。 */
 export function playerRange(player, records, dates) {
   const days = dates.map((date) => dayIntake(player, records, date));
   const recordedDays = days.filter((day) => day.hasRecord);
   const averageRate = (key) => {
-    if (!recordedDays.length) return null;
-    const amount =
-      recordedDays.reduce((sum, day) => sum + day.totals[key], 0) / recordedDays.length;
-    const ratio = rate(amount, player.target?.[key]);
-    return ratio == null ? null : Math.round(ratio * 100);
+    // 各日先除以該日目標，再取平均。沒有目標的日期不計入達成率。
+    const ratios = recordedDays.map((day) => rate(day.totals[key], day.target[key]))
+      .filter((value) => value != null);
+    return ratios.length ? Math.round(ratios.reduce((sum, value) => sum + value, 0) / ratios.length * 100) : null;
   };
   const recordedMeals = days.reduce((sum, day) => sum + day.recordedMeals, 0);
   const expectedMeals = dates.length * MAIN_MEALS.length;
   const hitDays = recordedDays.filter((day) => {
-    const calories = rate(day.totals.calories, player.target?.calories);
-    const protein = rate(day.totals.protein, player.target?.protein);
+    const calories = rate(day.totals.calories, day.target.calories);
+    const protein = rate(day.totals.protein, day.target.protein);
     return calories >= 0.8 && calories <= 1.15 && protein >= 0.8;
   }).length;
   const row = {

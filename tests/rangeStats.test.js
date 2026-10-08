@@ -10,6 +10,7 @@ import { datesInRange, playerRange, rangeBounds, rangeSummary } from "../js/serv
 const player = {
   id: "p1",
   name: "陳柏宇",
+  nutritionTargets: [['energy', 2000], ['protein', 100], ['carbohydrate', 200], ['fat', 60]].map(([nutrientId, targetMin]) => ({ athleteId: 'p1', nutrientId, targetMin, targetBasis: 'absolute', startDate: '2026-11-01' })),
   target: { calories: 2000, protein: 100, carbs: 200, fat: 60 },
 };
 const meal = (date, mealName, nutrition) => ({
@@ -93,3 +94,41 @@ test("team averages skip players who recorded nothing", () => {
 function emptyNutrition() {
   return { calories: 0, protein: 0, carbs: 0, fat: 0 };
 }
+
+// 每日計畫使用該日最新版本。其他日期使用當時有效的期間目標。
+test("historical rates use each day's latest target", () => {
+  const historical = {
+    ...player,
+    nutritionTargets: [
+      { athleteId: 'p1', nutrientId: 'energy', startDate: '2026-11-01', targetBasis: 'absolute', targetMin: 2000 },
+      { athleteId: 'p1', nutrientId: 'protein', startDate: '2026-11-01', targetBasis: 'absolute', targetMin: 100 },
+    ],
+    dailyPlans: [
+      { athleteId: 'p1', localDate: '2026-11-16', revision: 2, target: { calories: 3000, protein: 150 } },
+      { athleteId: 'p1', localDate: '2026-11-16', revision: 1, target: { calories: 1000, protein: 50 } },
+    ],
+  };
+  const row = playerRange(historical, [
+    meal('2026-11-15', '早餐', onTarget),
+    meal('2026-11-16', '早餐', { calories: 3000, protein: 150 }),
+  ], ['2026-11-15', '2026-11-16']);
+  assert.equal(row.calorieRate, 100);
+  assert.equal(row.proteinRate, 100);
+  assert.equal(row.hitDays, 2);
+});
+
+test("records without items do not count as recorded days", () => {
+  const row = playerRange(player, [{ ...meal('2026-11-16', '早餐', onTarget), items: [] }], ['2026-11-16']);
+  assert.equal(row.recordedMeals, 0);
+  assert.equal(row.calorieRate, null);
+  assert.equal(row.hitDays, 0);
+});
+
+// 缺少歷史目標時，不得套用目前目標，也不得稀釋其他日期的達成率。
+test("days without a target are excluded from average rates", () => {
+  const row = playerRange({ ...player, nutritionTargets: [], dailyPlans: [
+    { athleteId: 'p1', localDate: '2026-11-16', revision: 1, target: onTarget },
+  ] }, [meal('2026-11-15', '早餐', onTarget), meal('2026-11-16', '早餐', onTarget)], ['2026-11-15', '2026-11-16']);
+  assert.equal(row.calorieRate, 100);
+  assert.equal(row.hitDays, 1);
+});

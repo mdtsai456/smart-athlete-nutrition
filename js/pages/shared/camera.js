@@ -19,7 +19,7 @@ export function stopPlateCamera() {
   stream = null;
 }
 
-/** 已有鏡頭就接到這個畫面。沒有才開啟。不保存圖片。 */
+/** 已有影像串流時，將串流連接到目前畫面。否則開啟攝影機。此函式不儲存圖片。 */
 export async function startPlateCamera(video, note) {
   const view = video || document.querySelector("#plate-camera");
   const label = note || document.querySelector("#plate-camera-note");
@@ -74,7 +74,7 @@ export async function startPlateCamera(video, note) {
   label.textContent = "把餐盤放進框裡";
 }
 
-/** 頁面上還有攝影畫面時不關鏡頭。 */
+/** 頁面仍有攝影機預覽時，不關閉攝影機。 */
 export function releaseExtraCamera() {
   if (document.querySelector("#plate-camera")) return;
   stopPlateCamera();

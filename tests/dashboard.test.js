@@ -36,3 +36,13 @@ test("snacks and extra meals stay visible on the player home", () => {
   );
   assert.equal(daily.recordedCount, 1);
 });
+
+// 訓練前後的餐點須顯示，但不增加三餐紀錄數。
+test("training meals remain visible without counting as main meals", () => {
+  const daily = playerDaily({
+    date: '2026-11-16', players: [],
+    records: ['訓練前', '訓練後'].map(meal => ({ playerId: 'p1', date: '2026-11-16', status: 'submitted', meal, foodNames: '香蕉', items: [{ id: meal }] })),
+  });
+  assert.deepEqual(daily.meals.slice(3).map(row => row.meal), ['訓練前', '訓練後']);
+  assert.equal(daily.recordedCount, 0);
+});

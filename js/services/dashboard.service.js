@@ -1,7 +1,7 @@
 /**
  * 首頁餐列資料。
  * 早餐、午餐、晚餐各保留一列。
- * 同一餐的第二筆與點心各顯示一列。
+ * 同一餐的第二筆、點心與訓練前後的餐各顯示一列。
  * 沒有項目的餐與 draft 不顯示。
  */
 export const MAIN_MEALS = ["早餐", "午餐", "晚餐"];
@@ -20,7 +20,7 @@ function mealRows(mealName, records) {
     recorded: true,
   }));
 }
-/** 三餐各至少一列。同一餐第二筆與點心另列，並帶時間。 */
+/** 早餐、午餐與晚餐各顯示至少一列。同餐的其他紀錄與點心分列顯示，並標示時間。 */
 export function playerDaily(data, playerId = "p1") {
   const player = data.players.find((item) => item.id === playerId);
   const records = data.records.filter(
@@ -31,10 +31,11 @@ export function playerDaily(data, playerId = "p1") {
       mealHasItems(record),
   );
   const ofMeal = (meal) => records.filter((record) => record.meal === meal);
-  const snacks = ofMeal("點心");
+  const extraMeals = [...new Set(records.map((record) => record.meal))]
+    .filter((meal) => !MAIN_MEALS.includes(meal));
   const meals = [
     ...MAIN_MEALS.flatMap((meal) => mealRows(meal, ofMeal(meal))),
-    ...(snacks.length ? mealRows("點心", snacks) : []),
+    ...extraMeals.flatMap((meal) => mealRows(meal, ofMeal(meal))),
   ];
   return {
     player,

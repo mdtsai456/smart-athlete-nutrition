@@ -1,7 +1,7 @@
 /**
  * 跨頁狀態。
- * 日期、帳號與篩選存在此工作階段。
- * 換頁時，sessionStorage 保留這些值。
+ * 日期、球員選擇與分析區間存於 sessionStorage。
+ * 文字搜尋與飲食紀錄篩選只保留於目前頁面。
  */
 import { today } from "../api/seed.js";
 export const state = {
@@ -11,6 +11,10 @@ export const state = {
   date: sessionStorage.getItem("viewDate") || today,
   data: null,
   filter: "",
+  // 飲食紀錄篩選只保留於目前頁面。重新載入後重設。
+  // 空字串表示全部球員；空陣列表示全部餐別。
+  recordPlayer: "",
+  recordMeals: [],
   route: "",
   rangePreset: sessionStorage.getItem("rangePreset") || "7",
   rangeStart: sessionStorage.getItem("rangeStart") || "",

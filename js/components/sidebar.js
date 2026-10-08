@@ -37,7 +37,7 @@ export function sidebar(state) {
   const link = (id, label, glyph) =>
     `<a href="${pageUrl(state.role, id)}" class="nav-item ${state.route === id ? "active" : ""}" ${state.route === id ? 'aria-current="page"' : ""}>${icon(glyph)}<span>${label}</span></a>`;
   const signedIn = state.data?.account;
-  const links = `${link("login", "登入頁", "exit")}${nav.map(([id, glyph, label]) => link(id, roleLabels[state.role]?.[id] || label, glyph)).join("")}`;
+  const links = nav.map(([id, glyph, label]) => link(id, roleLabels[state.role]?.[id] || label, glyph)).join("");
   const profile = `<div class="sidebar-bottom"><button class="help-btn" data-action="help">${icon("help")} 使用指南</button><div class="profile"><div><strong>${esc(signedIn?.name || "")}</strong><small>${roles[state.role]} · ${esc(signedIn?.organizationName || "")}</small></div></div></div>`;
   return `<aside class="sidebar"><p class="nav-caption">${roles[state.role]}介面</p><nav>${links}</nav>${profile}</aside>`;
 }

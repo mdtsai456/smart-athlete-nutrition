@@ -144,3 +144,7 @@ npm test
 | 儲存每日營養目標 | `PUT /daily-plans` |
 
 修改的 `action` 為 `edit`、`add_item`、`confirm`、`reject`、`delete_item`、`add_image`、`delete_image`、`queue_analysis`、`review`、`reopen`。照片只存 object key，不把圖片內容放進資料庫或 `localStorage`。欄位與權限以 `athlete_nutrition_v10/` 的契約為準。
+
+## 程式維護
+
+餐點查詢不會執行辨識。示範按鈕會明確呼叫模擬分析，再重新讀取結果。項目操作直接傳入餐點與項目 ID。簡化項目、驗證結果與正式串接限制見 [程式檢查紀錄](docs/code-review.md)。

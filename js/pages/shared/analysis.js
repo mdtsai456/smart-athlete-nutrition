@@ -60,7 +60,7 @@ function rangeBoard(data, players, state) {
     )
     .join(
       "",
-    )}</div><div class="range-fields"><label>開始<input type="date" id="range-start" aria-label="開始日期" value="${esc(bounds.start)}"></label><label>結束<input type="date" id="range-end" aria-label="結束日期" value="${esc(bounds.end)}"></label></div>${rangeCards(summary, periodLabel(bounds.preset), solo)}<section class="panel"><div class="panel-heading"><div><h2>球員營養達成狀況</h2><p>達成率是有記錄的日子的平均，不含完全沒記的天。達標天數是熱量落在 80%–115%、且蛋白質至少 80% 的天數。</p></div></div>${rangeTable(summary.rows)}</section></section>`;
+    )}</div><div class="range-fields"><label>開始<input type="date" id="range-start" aria-label="開始日期" value="${esc(bounds.start)}"></label><label>結束<input type="date" id="range-end" aria-label="結束日期" value="${esc(bounds.end)}"></label></div>${rangeCards(summary, periodLabel(bounds.preset), solo)}<section class="panel"><div class="panel-heading"><div><h2>球員營養達成狀況</h2><p>達成率先依各日目標計算，再取平均。沒有紀錄或該營養素目標的日期不計入平均。達標天數是熱量落在 80%–115%、且蛋白質至少 80% 的天數。</p></div></div>${rangeTable(summary.rows)}</section></section>`;
 }
 
 function dailyColumn(data, filter, players) {

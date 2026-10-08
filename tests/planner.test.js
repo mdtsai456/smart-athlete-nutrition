@@ -189,3 +189,12 @@ test("carb check stays in the editor and is not stored on the nutrient rows", ()
   assert.equal(saved.target.carbs, 430.5);
   assert.equal(input.carbMinimum, 4.5);
 });
+
+test("blank or nonnumeric inputs cannot silently become zero", () => {
+  for (const value of ["", "  ", null, undefined, false, [], {}]) {
+    assert.equal(calculatePlan({ ...example, carbMinimum: value }).valid, false);
+    assert.equal(calculatePlan({ ...example, manual: true, protein: 112, fat: 70, carbs: value }).valid, false);
+  }
+  assert.equal(calculatePlan({ ...example, carbMinimum: 0 }).valid, true);
+  assert.equal(calculatePlan({ ...example, carbMinimum: "0" }).valid, true);
+});

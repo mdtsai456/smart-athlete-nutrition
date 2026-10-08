@@ -1,6 +1,6 @@
 /**
  * 菜色寫入。
- * 預覽不寫入。這裡才寫入食物主檔。
+ * 預覽不寫入資料。此模組負責寫入食物主檔。
  */
 import { collection } from "../api/api.js";
 import { foodNutrients, foods } from "../api/food.api.js";
@@ -27,7 +27,7 @@ export async function addFood(data) {
   }
   return food;
 }
-/** 一列寫入失敗就撤回該列，其他列繼續。 */
+/** 某列寫入失敗時，撤回該列的變更，並繼續處理其他列。 */
 export async function importFoods(rows) {
   const written = [];
   const failed = [];
@@ -63,7 +63,7 @@ export async function importFoods(rows) {
   }
   return { written, failed };
 }
-/** 已出現在飲食紀錄的菜色不能刪。 */
+/** 不得刪除飲食紀錄已使用的菜色。 */
 export async function deleteFood(id) {
   const [mealItems, nutrientRows] = await Promise.all([
     collection("mealItems").list(),

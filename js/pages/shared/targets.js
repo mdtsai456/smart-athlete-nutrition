@@ -34,7 +34,7 @@ function resultView(result) {
       "",
     )}</div><div class="carb-check"><span>碳水 / 體重</span><strong>${result.carbRate} <small>g/kg</small></strong></div><div class="day-carb-summary"><strong>${esc(result.training)} · 碳水需求 ${result.carbMinimum} g/kg</strong><p>最低需求 ${result.carbRequired} g ／ 目前分配 ${t.carbs} g</p><span class="${result.carbShortfall > 0.1 ? "warn" : "good"}">${result.carbShortfall > 0.1 ? `尚差 ${result.carbShortfall} g 碳水` : "已達當日碳水需求"}</span></div><div class="energy-check"><strong>熱量驗算</strong><p>${t.protein} × 4 ＋ ${t.carbs} × 4 ＋ ${t.fat} × 9</p><span>= ${result.energy} kcal</span><small class="${Math.abs(result.difference) > 5 ? "warn" : "good"}">與目標差 ${result.difference > 0 ? "+" : ""}${result.difference} kcal · 容許四捨五入差 ±5 kcal</small></div>${result.errors.map((message) => `<div class="plan-alert error" role="alert">${esc(message)}</div>`).join("")}${result.warnings.map((message) => `<div class="plan-alert warning">${esc(message)}</div>`).join("")}${!result.warnings.length && result.valid ? '<div class="plan-alert okay">符合已設定的碳水需求與脂肪底線。</div>' : ""}`;
 }
-/** 改分配條件會離開手動模式並重算。有提醒時要勾選才可儲存。 */
+/** 修改分配條件後，切換至自動模式並重新計算。有提醒時，必須勾選確認才能儲存。 */
 export function mountTargets(
   root,
   { data, date, playerId, onPlayer, onSaved, notify },

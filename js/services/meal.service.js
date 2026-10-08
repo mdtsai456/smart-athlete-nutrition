@@ -167,7 +167,7 @@ export async function startMealAnalysis(analysisId) {
   if (analysis.status !== "queued") throw new Error("只有排隊中的分析可以開始");
   return mealAnalyses.update(analysisId, { status: "running", startedAt: nowIso() });
 }
-/** 佔位辨識。最多三道有營養素的菜。重量 80–300 g，每 10 g 一階。 */
+/** 模擬食物辨識。最多回傳三道有營養資料的菜色。重量範圍為 80–300 g，間隔為 10 g。 */
 function demoRecognitionItems(foods, foodNutrientRows) {
   const withNutrients = new Set(foodNutrientRows.map((row) => row.foodId));
   const pool = foods.filter(
@@ -185,7 +185,7 @@ function demoRecognitionItems(foods, foodNutrientRows) {
     confidence: 80 + Math.floor(Math.random() * 19),
   }));
 }
-/** 沒有影像位址就失敗。不送圖片，也不呼叫模型。 */
+/** 缺少影像位址時，回傳失敗。此流程不傳送圖片，也不呼叫模型。 */
 async function recognizeMealImage(objectKey) {
   if (!objectKey) return { succeeded: false, errorMessage: "尚未上傳餐盤影像" };
   const [foodRows, nutrientRows] = await Promise.all([
@@ -222,8 +222,8 @@ function writeRecognitionItem(analysis, item, foods, stamp) {
   });
 }
 /**
- * 沒傳結果時用佔位辨識。有傳結果時用該結果，空陣列也算。
- * 對不到菜色的項目留待確認。單項寫入失敗不推翻其他項目。
+ * 未傳入結果時，使用模擬辨識。已傳入結果時，使用該結果，包括空陣列。
+ * 無法對應菜色的項目保持待確認狀態。單一項目寫入失敗時，保留其他項目。
  */
 export async function completeMealAnalysis(analysisId, outcome) {
   const analysis = await mealAnalyses.get(analysisId);
@@ -315,7 +315,7 @@ export async function addMealItem(mealId, actorId, item, expectedRevision) {
   });
   return { ...(await advanceMeal(mealId)), itemId: created.id };
 }
-/** 依目前食物表寫入營養資料。食物與重量都相同時不改版本。 */
+/** 依目前食物表寫入營養資料。食物與重量均未變更時，不更新版本。 */
 export async function confirmMealItem(itemId, actorId, patch = {}, expectedRevision) {
   const item = await mealItems.get(itemId);
   if (!item) throw new Error("找不到餐點項目");
@@ -364,7 +364,7 @@ export async function confirmMealItem(itemId, actorId, patch = {}, expectedRevis
   });
   return advanceMeal(meal.id);
 }
-/** 保留這一列，狀態改為已拒絕，並清掉營養資料。 */
+/** 保留該項目，將狀態設為已拒絕，並清除營養資料。 */
 export async function rejectMealItem(itemId, actorId, reason, expectedRevision) {
   const item = await mealItems.get(itemId);
   if (!item) throw new Error("找不到餐點項目");
@@ -386,7 +386,7 @@ export async function rejectMealItem(itemId, actorId, reason, expectedRevision) 
   });
   return advanceMeal(meal.id);
 }
-/** 草稿、沒有待確認項目、分析已結束，才可以送出。 */
+/** 只有草稿可以送出。送出前，所有項目必須完成確認或拒絕，且分析必須結束。 */
 function canSubmitMeal(meal, items, analyses) {
   if (!meal || meal.status !== "draft" || !items.length) return false;
   if (items.some((item) => item.confirmationStatus === "pending")) return false;
@@ -396,7 +396,7 @@ function canSubmitMeal(meal, items, analyses) {
       (analysis.status === "queued" || analysis.status === "running"),
   );
 }
-/** 同一送出識別碼與同一內容回傳第一次的結果。內容不同則拒絕。 */
+/** 送出識別碼與內容均相同時，回傳第一次的結果。識別碼相同但內容不同時，拒絕請求。 */
 export async function submitMeal(mealId, actorId, mealType, meta = {}) {
   const meal = await requireMeal(mealId);
   const items = (await rowsOf("mealItems")).filter(
@@ -485,7 +485,7 @@ export async function reviewMeal(mealId, actorId, expectedRevision) {
       statusChangedAt: stamp,
   });
 }
-/** 攝取只加總已確認項目的營養資料。分析取最近一筆。 */
+/** 攝取量只加總已確認項目的營養資料。分析資料使用最新一筆紀錄。 */
 export function presentMeal(meal, tables) {
   const items = tables.mealItems.filter((item) => item.mealRecordId === meal.id);
   const analyses = tables.mealAnalyses
@@ -540,11 +540,6 @@ export function presentMeal(meal, tables) {
       .join("、"),
     canSubmit: canSubmitMeal(meal, items, analyses),
   };
-}
-export async function mealIdOf(itemId) {
-  const item = await mealItems.get(itemId);
-  if (!item) throw new Error("找不到餐點項目");
-  return item.mealRecordId;
 }
 export async function mealView(mealId) {
   const meal = await requireMeal(mealId);

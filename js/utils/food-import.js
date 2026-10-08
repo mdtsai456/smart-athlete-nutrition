@@ -1,7 +1,7 @@
 /**
  * 菜色 Excel 預覽。
- * 這一層只判斷可寫入與不可寫入。
- * 它不寫入食物主檔。
+ * 此模組檢查各列是否可寫入。
+ * 此模組不寫入食物主檔。
  */
 export const NUTRIENT_LABEL = {
   energy: "熱量",
@@ -66,7 +66,7 @@ function mapHeaders(header) {
   return { columns, ignoredColumns, duplicate };
 }
 
-/** 空白營養格略過。同名、負數與對不到的標題列不寫入。 */
+/** 略過空白的營養儲存格。菜名重複、數值為負數或欄位標題無法對應時，不寫入該列。 */
 export function previewFoodImport(rows, existingNames = []) {
   if (!Array.isArray(rows) || !rows.length) return blankResult("檔案沒有資料列");
   const header = rows[0].map((cell) => cellText(cell));

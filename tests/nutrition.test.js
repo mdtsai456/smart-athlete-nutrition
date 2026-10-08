@@ -95,7 +95,7 @@ test("camera analysis moves queued to running to succeeded and intake uses snaps
   assert.ok(view.items.every((item) => item.confirmationStatus === "pending"));
   assert.equal(view.nutrition.calories, 0);
   assert.equal(view.image.objectKey, detail.image.objectKey);
-  for (const item of view.items) await confirmMealItem(item.id);
+  for (const item of view.items) await confirmMealItem(meal.mealId, item.id);
   view = await readMeal(meal.mealId);
   const preview = await previewCatalog(
     view.items.map((item) => ({ foodId: item.foodId, grams: item.confirmedWeightG })),

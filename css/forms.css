@@ -212,6 +212,23 @@ dialog.record-dialog {
 }
 .record-layout .item-actions {
   margin-top: 2px;
+  /* 選單與操作按鈕等高並靠底對齊，標籤保留在選單上方。 */
+  align-items: flex-end;
+}
+.record-layout .item-actions > .field {
+  margin-bottom: 0;
+  gap: 6px;
+}
+.record-layout .item-actions select {
+  height: 36px;
+  min-height: 36px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.record-layout .item-actions > .btn {
+  height: 36px;
+  min-width: 54px;
+  flex: 0 0 auto;
 }
 .meal-picker {
   margin: 14px 0 12px;
@@ -325,8 +342,9 @@ dialog.record-dialog {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  height: calc(100dvh - 360px);
-  min-height: 280px;
+  /* 設定預覽區高度。小螢幕可以捲動，預覽區不低於最小高度。 */
+  height: calc(100dvh - 260px);
+  min-height: 400px;
   padding-bottom: 16px;
 }
 .plate-page .actions {
@@ -356,7 +374,7 @@ dialog .plate-camera {
 }
 .plate-frame {
   position: absolute;
-  inset: 14% 18%;
+  inset: 10% 18%;
   border: 3px solid #fff;
   border-radius: 28px;
   box-shadow: 0 0 0 999px #102c4c59;
@@ -546,3 +564,66 @@ dialog .plate-camera {
   gap: 8px;
   padding: 0 24px 20px;
 }
+
+/* 只降低背景圖片的透明度。文字保持原有透明度。 */
+.meal-image-placeholder {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  color: #34546f;
+}
+.meal-image-placeholder::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url("../assets/images/meal-preview.png") center / cover no-repeat;
+  opacity: 0.28;
+  pointer-events: none;
+}
+.meal-image-placeholder > span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+/* 手動新增餐點：菜色、重量與送出按鈕同列，標題及錯誤訊息各自佔滿寬度。 */
+.record-layout form[data-form="draft-add"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(75px, 0.45fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+.record-layout form[data-form="draft-add"] > h3,
+.record-layout form[data-form="draft-add"] > .form-error {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.record-layout form[data-form="draft-add"] > .field,
+.record-layout form[data-form="draft-add"] > .actions {
+  min-width: 0;
+  margin: 0;
+}
+.record-layout form[data-form="draft-add"] .btn {
+  white-space: nowrap;
+  min-height: 44px;
+}
+@media (max-width: 520px) {
+  .record-layout form[data-form="draft-add"] { gap: 8px; }
+  .record-layout form[data-form="draft-add"] .btn { padding: 10px 8px; }
+}
+
+/* 紀錄列表與詳情共用預覽元件，只有範例背景淡化，實拍照片保持原樣。 */
+.meal-record-food { display: flex; align-items: center; gap: 12px; }
+.meal-image-thumb,
+.record-photo.meal-image-thumb {
+  width: 88px;
+  height: 64px;
+  min-width: 88px;
+  flex: 0 0 88px;
+  margin: 0;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.meal-image-thumb.meal-image-placeholder { display: grid; place-items: end center; padding: 4px; background: #e7f1f7; }
+.meal-image-thumb > span { font-size: 10px; color: #34546f; }
+.guide > .meal-image-placeholder { min-height: 220px; margin-top: 16px; }

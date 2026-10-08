@@ -12,7 +12,6 @@ import {
   editMeal,
   deleteMealItem as writeDeleteItem,
   deleteMealImage,
-  mealIdOf,
   mealView as engineMealView,
   openDraftMeal as createDraft,
   queueMealAnalysis as writeQueue,
@@ -22,7 +21,6 @@ import {
   submitMeal as writeSubmit,
   completeMealAnalysis,
   startMealAnalysis,
-  ANALYSIS_STATUS,
   previewCatalog,
 } from "../services/meal.service.js";
 
@@ -40,27 +38,29 @@ const ACTIONS = new Set([
 ]);
 
 /** 營養師是 nutritionist。球員是 player 加自己的編號。 */
-async function actorFromSession(session) {
+function actorFromSession(session) {
   if (session.role === "nutritionist") return "nutritionist";
   if (session.role === "athlete") return `player:${session.athleteId}`;
   throw new Error("教練不能修改餐點");
 }
 
-async function guard() {
-  if (config.mode !== "mock") return null;
-  return assertMockWrite();
+// Mock 也限制球員只能修改自己的餐點。正式 API 必須在後端執行相同驗證。
+function assertOwnMeal(session, athleteId) {
+  if (session.role === "athlete" && session.athleteId !== athleteId)
+    throw new Error("只能修改自己的餐點");
 }
 
 /** 建立草稿。版本從 1 開始。 */
 export async function createMeal(body) {
   if (config.mode !== "mock")
     return request("/meals", { method: "POST", body, headers: csrfHeader() });
-  const session = await guard();
+  const session = await assertMockWrite();
+  assertOwnMeal(session, body.athleteId);
   return createDraft({
     athleteId: body.athleteId,
     localDate: body.localDate,
     mealType: body.mealType,
-    actorId: await actorFromSession(session),
+    actorId: actorFromSession(session),
   });
 }
 
@@ -76,9 +76,15 @@ export async function mutateMeal(mealId, body) {
       body,
       headers: csrfHeader(),
     });
-  const session = await guard();
-  const actor = await actorFromSession(session);
+  const session = await assertMockWrite();
+  const actor = actorFromSession(session);
+  const current = await engineMealView(mealId);
+  assertOwnMeal(session, current.playerId);
   const payload = body.payload || {};
+  if (["confirm", "reject", "delete_item"].includes(body.action)) {
+    const item = current.items.find(item => item.id === payload.itemId);
+    if (!item) throw new Error("餐點不包含此項目");
+  }
   const reason = body.reason;
   switch (body.action) {
     case "edit":
@@ -106,10 +112,7 @@ export async function mutateMeal(mealId, body) {
       return writeReview(mealId, actor, body.expectedRevision);
     case "reopen":
       return writeReopen(mealId, actor, reason, body.expectedRevision);
-    default: {
-      const unknown = body.action;
-      throw new Error(unknown ? "不支援的餐點操作" : "缺少餐點操作");
-    }
+
   }
 }
 
@@ -121,39 +124,34 @@ export async function saveMeal(mealId, body) {
       body,
       headers: csrfHeader(),
     });
-  const session = await guard();
-  return writeSubmit(mealId, await actorFromSession(session), body.mealType, {
+  const session = await assertMockWrite();
+  assertOwnMeal(session, (await engineMealView(mealId)).playerId);
+  return writeSubmit(mealId, actorFromSession(session), body.mealType, {
     expectedRevision: body.expectedRevision,
     requestId: body.requestId,
   });
 }
 
-/** 排隊中改為分析中。分析中且沒有指定結果時，用佔位辨識完成。 */
+/** 只讀取餐點，不修改分析狀態或建立項目。 */
 export async function readMeal(mealId) {
   if (config.mode !== "mock") return request(`/meals/${mealId}`);
-  let view = await engineMealView(mealId);
-  if (view.analysis?.status === "queued") {
-    const running = await startMealAnalysis(view.analysis.id);
-    view = {
-      ...view,
-      analysis: { ...view.analysis, ...running, statusLabel: ANALYSIS_STATUS.running },
-    };
-  } else if (view.analysis?.status === "running") {
-    await completeMealAnalysis(view.analysis.id);
-    view = await engineMealView(mealId);
-  }
-  return view;
+  return engineMealView(mealId);
 }
-/** 使用傳入的辨識結果。不改走佔位辨識。 */
+/** 明確執行一次模擬分析。正式模式不得呼叫本機模擬流程。 */
 export async function finishMealAnalysis(mealId, outcome) {
+  if (config.mode !== "mock") throw new Error("正式模式不支援模擬辨識");
+  const session = await assertMockWrite();
+  actorFromSession(session);
   const view = await engineMealView(mealId);
-  if (view.analysis?.status !== "running") throw new Error("分析還沒開始，或已經結束");
+  assertOwnMeal(session, view.playerId);
+  if (view.analysis?.status !== "queued") throw new Error("分析尚未排隊，或已經開始");
+  await startMealAnalysis(view.analysis.id);
   await completeMealAnalysis(view.analysis.id, outcome);
   return engineMealView(mealId);
 }
 
 /** 下面是固定動作的簡寫，仍走建立、修改或送出。 */
-export const openDraftMeal = (input) => createMeal(input);
+export { createMeal as openDraftMeal };
 export const attachMealImage = (mealId, expectedRevision) =>
   mutateMeal(mealId, { action: "add_image", expectedRevision, payload: {} });
 export const queueMealAnalysis = (mealId, expectedRevision) =>
@@ -167,24 +165,24 @@ export const reopenMeal = (mealId, reason, expectedRevision) =>
 export const reviewMeal = (mealId, expectedRevision) =>
   mutateMeal(mealId, { action: "review", expectedRevision, payload: {} });
 
-/** 先由項目找到餐點，再走修改。確認、拒絕、刪除都一樣。 */
-export async function confirmMealItem(itemId, patch = {}, expectedRevision) {
-  return mutateMeal(await mealIdOf(itemId), {
+/** 呼叫端提供餐點與項目 ID，不額外查詢項目資料表。 */
+export async function confirmMealItem(mealId, itemId, patch = {}, expectedRevision) {
+  return mutateMeal(mealId, {
     action: "confirm",
     expectedRevision,
     payload: { itemId, ...patch },
   });
 }
-export async function rejectMealItem(itemId, reason, expectedRevision) {
-  return mutateMeal(await mealIdOf(itemId), {
+export async function rejectMealItem(mealId, itemId, reason, expectedRevision) {
+  return mutateMeal(mealId, {
     action: "reject",
     expectedRevision,
     payload: { itemId },
     reason,
   });
 }
-export async function deleteMealItem(itemId, expectedRevision, reason) {
-  return mutateMeal(await mealIdOf(itemId), {
+export async function deleteMealItem(mealId, itemId, expectedRevision, reason) {
+  return mutateMeal(mealId, {
     action: "delete_item",
     expectedRevision,
     payload: { itemId },
@@ -234,7 +232,7 @@ export async function addRecord(data) {
 }
 /** 刪掉草稿裡的每一項。每刪一項，版本加 1。 */
 export async function clearDraftItems(mealId) {
-  let view = await engineMealView(mealId);
+  let view = await readMeal(mealId);
   for (const item of view.items) {
     const removed = await mutateMeal(mealId, {
       action: "delete_item",

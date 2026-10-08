@@ -1243,3 +1243,52 @@ footer {
   flex-direction: column;
   gap: 18px;
 }
+
+/* 飲食紀錄篩選在窄螢幕自動換行。 */
+.record-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 20px;
+  padding: 0 24px 24px;
+}
+.record-player-filter {
+  display: grid;
+  gap: 8px;
+  flex: 0 1 240px;
+  min-width: 0;
+}
+.record-player-filter select {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+  color: var(--text);
+  font: inherit;
+}
+.record-meal-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.record-meal-filters legend { margin-bottom: 8px; }
+.record-meal-filters label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  cursor: pointer;
+}
+.record-meal-filters input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #195e91;
+}
+.record-filters > .muted { padding-bottom: 10px; }

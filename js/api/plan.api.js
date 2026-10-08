@@ -4,7 +4,7 @@
  */
 import { collection, config, request } from "./api.js";
 import { assertMockWrite, csrfHeader } from "./session.js";
-import { confirmedPlan } from "../services/target.service.js";
+import { confirmedPlan, latestDailyPlan } from "../services/target.service.js";
 
 export async function saveDailyPlan(body) {
   if (config.mode !== "mock")
@@ -13,10 +13,7 @@ export async function saveDailyPlan(body) {
   if (session.role !== "nutritionist") throw new Error("只有營養師可以儲存每日計畫");
   const plan = confirmedPlan(body.input, body.warningsAcknowledged);
   const store = collection("dailyPlans");
-  const existing = (await store.list()).filter(
-    (row) => row.athleteId === body.athleteId && row.localDate === body.localDate,
-  );
-  const current = existing.sort((a, b) => b.revision - a.revision)[0];
+  const current = latestDailyPlan(await store.list(), body.athleteId, body.localDate);
   const currentRevision = current?.revision ?? 0;
   if (body.expectedRevision != null && Number(body.expectedRevision) !== currentRevision) {
     const error = new Error("每日計畫已被其他人更新，請重新讀取");

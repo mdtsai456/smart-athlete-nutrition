@@ -1,7 +1,7 @@
 /**
  * 頁面讀取。
- * 每個頁面用同一份已整理的資料。
- * 寫入不在這裡。
+ * 各頁面使用相同格式的資料。
+ * 此模組不寫入資料。
  */
 import { accounts, athleteCoaches, coaches, nutritionists, organizations, players } from "../api/athlete.api.js";
 import { collection } from "../api/api.js";
@@ -12,14 +12,7 @@ import { today } from "../api/seed.js";
 import { activeCoaches, presentAccounts, visibleAthleteIds } from "./auth.service.js";
 import { presentMeal } from "./meal.service.js";
 import { playerSummary, presentFood } from "./nutrition.service.js";
-import { resolveTarget } from "./target.service.js";
-function latestDailyPlan(plans, athleteId, date) {
-  return (
-    (plans || [])
-      .filter((row) => row.athleteId === athleteId && row.localDate === date)
-      .sort((a, b) => b.revision - a.revision)[0] || null
-  );
-}
+import { latestDailyPlan, resolveTarget } from "./target.service.js";
 function average(values) {
   const numbers = values.filter((value) => value != null);
   if (!numbers.length) return null;
@@ -81,7 +74,7 @@ async function tables() {
     dailyPlans: dailyPlanRows,
   };
 }
-/** 依登入者與日期留下看得到的球員，並附上菜色、餐點與當日目標。 */
+/** 依登入者權限與指定日期篩選球員。回傳資料包含菜色、餐點與當日目標。 */
 export async function loadPage(date = today, accountId = null) {
     const data = await tables();
     const directory = presentAccounts(
@@ -108,6 +101,7 @@ export async function loadPage(date = today, accountId = null) {
           nutritionTargets: data.nutritionTargets.filter(
             (row) => row.athleteId === player.id,
           ),
+          dailyPlans: data.dailyPlans.filter((row) => row.athleteId === player.id),
           dailyPlan: latestDailyPlan(data.dailyPlans, player.id, date),
           coachName:
             activeCoaches(data.athleteCoaches, data.coaches, player.id, date).join("、") ||

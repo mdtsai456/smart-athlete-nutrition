@@ -48,9 +48,9 @@ test("failed analysis does not create items and reviewed meals stay locked", asy
   await attachMealImage(meal.mealId);
   await completeMealAnalysis(view.analysis.id);
   view = await readMeal(meal.mealId);
-  await rejectMealItem(view.items[0].id);
-  await confirmMealItem(view.items[1].id);
-  await confirmMealItem(view.items[2].id);
+  await rejectMealItem(meal.mealId, view.items[0].id);
+  await confirmMealItem(meal.mealId, view.items[1].id);
+  await confirmMealItem(meal.mealId, view.items[2].id);
   const rejected = (await readMeal(meal.mealId)).items[0];
   assert.equal(rejected.confirmationStatus, "rejected");
   assert.equal(rejected.snapshotNutrientCount, 0);
@@ -60,7 +60,7 @@ test("failed analysis does not create items and reviewed meals stay locked", asy
   await reviewMeal(meal.mealId);
   const reviewed = await readMeal(meal.mealId);
   assert.equal(reviewed.status, "reviewed");
-  await assert.rejects(() => confirmMealItem(reviewed.items[1].id));
+  await assert.rejects(() => confirmMealItem(meal.mealId, reviewed.items[1].id));
 });
 test("nutritionist reopens a reviewed meal with a reason", async () => {
   await signIn("acct-p2");
@@ -77,7 +77,7 @@ test("nutritionist reopens a reviewed meal with a reason", async () => {
   await completeMealAnalysis(view.analysis.id);
   view = await mealView(meal.mealId);
   await assert.rejects(
-    () => confirmMealItem(view.items[0].id, {}, 1),
+    () => confirmMealItem(meal.mealId, view.items[0].id, {}, 1),
     (error) => {
       assert.equal(error.status, 409);
       assert.equal(error.code, "REVISION_CONFLICT");
@@ -86,7 +86,7 @@ test("nutritionist reopens a reviewed meal with a reason", async () => {
       return true;
     },
   );
-  for (const item of view.items) await confirmMealItem(item.id);
+  for (const item of view.items) await confirmMealItem(meal.mealId, item.id);
   const draft = await mealView(meal.mealId);
   const requestId = crypto.randomUUID();
   const submitted = await submitMeal(meal.mealId, "dinner", {
@@ -116,13 +116,13 @@ test("nutritionist reopens a reviewed meal with a reason", async () => {
   assert.equal(view.reason, "晚餐份量偏多，請重拍");
   const target = view.items[0];
   await assert.rejects(() =>
-    confirmMealItem(
+    confirmMealItem(meal.mealId,
       target.id,
       { weightG: 220, weightSource: "manual" },
       view.revision,
     ),
   );
-  const corrected = await confirmMealItem(
+  const corrected = await confirmMealItem(meal.mealId,
     target.id,
     { weightG: 220, weightSource: "manual", reason: "實際份量是 220 克" },
     view.revision,
@@ -140,15 +140,15 @@ test("nutritionist reopens a reviewed meal with a reason", async () => {
   view = await readMeal(meal.mealId);
   assert.equal(openedAgain.revision, view.revision);
   await assert.rejects(() =>
-    deleteMealItem(target.id, view.revision, "  "),
+    deleteMealItem(meal.mealId, target.id, view.revision, "  "),
   );
-  await deleteMealItem(target.id, view.revision, "這項辨識錯了");
+  await deleteMealItem(meal.mealId, target.id, view.revision, "這項辨識錯了");
   view = await readMeal(meal.mealId);
   assert.equal(view.items.some((item) => item.id === target.id), false);
   assert.equal(view.status, "submitted");
   await signIn("acct-p2");
   await assert.rejects(() => submitMeal(meal.mealId, "dinner"));
-  await assert.rejects(() => confirmMealItem(view.items[0].id));
+  await assert.rejects(() => confirmMealItem(meal.mealId, view.items[0].id));
 });
 test("missing recognition result draws catalog foods and an explicit result stays", async () => {
   await signIn("acct-p1");
@@ -227,7 +227,7 @@ test("an empty recognition stays empty and an unknown food stays unmatched", asy
   assert.equal(view.items[0].foodId, "f1");
   assert.equal(view.items[1].foodId, null);
   assert.equal(view.items[1].name, "沒看過的菜");
-  await assert.rejects(() => confirmMealItem(view.items[1].id), /請先對應食物資料後再確認/);
+  await assert.rejects(() => confirmMealItem(mixed.mealId, view.items[1].id), /請先對應食物資料後再確認/);
 });
 test("recognition without an image fails and writes nothing", async () => {
   await signIn("acct-p1");
@@ -243,4 +243,30 @@ test("recognition without an image fails and writes nothing", async () => {
   assert.equal(failed.status, "failed");
   assert.equal(failed.errorMessage, "尚未上傳餐盤影像");
   assert.equal((await mealView(meal.mealId)).items.length, 0);
+});
+
+test("reading a queued meal does not execute analysis", async () => {
+  await signIn("acct-p1");
+  const meal = await openDraftMeal({ athleteId: "p1", localDate: today, mealType: "lunch" });
+  await attachMealImage(meal.mealId);
+  await queueMealAnalysis(meal.mealId);
+  const before = await readMeal(meal.mealId);
+  const again = await readMeal(meal.mealId);
+  assert.equal(again.analysis.status, "queued");
+  assert.equal(again.revision, before.revision);
+  assert.equal(again.items.length, 0);
+  const { finishMealAnalysis } = await import("../js/api/meal.api.js");
+  const finished = await finishMealAnalysis(meal.mealId, { succeeded: true, items: [] });
+  assert.equal(finished.analysis.status, "succeeded");
+  assert.equal(finished.items.length, 0);
+  await assert.rejects(() => finishMealAnalysis(meal.mealId));
+});
+
+test("an athlete cannot create or mutate another athlete's meal", async () => {
+  await signIn("acct-p1");
+  await assert.rejects(() => openDraftMeal({ athleteId: "p2", localDate: today, mealType: "lunch" }), /自己的餐點/);
+  const meal = await openDraftMeal({ athleteId: "p1", localDate: today, mealType: "lunch" });
+  await signIn("acct-p2");
+  await assert.rejects(() => attachMealImage(meal.mealId), /自己的餐點/);
+  await assert.rejects(() => submitMeal(meal.mealId, "lunch"), /自己的餐點/);
 });

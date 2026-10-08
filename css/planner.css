@@ -350,9 +350,7 @@
 .day-carb-summary > span {
   font-weight: 600;
 }
-/* Athlete context: compact,
-readable,
-and separate from allocation inputs. */
+/* 運動員摘要與營養分配表單分開顯示。 */
 .athlete-summary {
   background: #fff;
   border: 1px solid var(--border);

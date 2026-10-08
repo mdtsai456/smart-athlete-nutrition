@@ -37,8 +37,13 @@ function readCookie(name) {
     .find((item) => item.startsWith(`${name}=`));
   return found ? decodeURIComponent(found.slice(name.length + 1)) : "";
 }
+// Node.js 的 localStorage 可能存在但沒有可用方法；測試改用記憶體。
+function hasStorage() {
+  return typeof globalThis.localStorage?.getItem === "function" &&
+    typeof globalThis.localStorage?.setItem === "function";
+}
 function readServer() {
-  if (typeof localStorage === "undefined") return memoryServer;
+  if (!hasStorage()) return memoryServer;
   try {
     return JSON.parse(localStorage.getItem(SERVER_KEY) || "{}");
   } catch {
@@ -46,7 +51,7 @@ function readServer() {
   }
 }
 function writeServer(store) {
-  if (typeof localStorage === "undefined") {
+  if (!hasStorage()) {
     memoryServer = store;
     return;
   }

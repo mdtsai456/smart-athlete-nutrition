@@ -59,3 +59,22 @@ test("records list drops a meal after every item is deleted", () => {
   assert.match(html, /rejected-dinner/);
   assert.match(html, /青菜（已拒絕）/);
 });
+
+// 球員條件與餐別條件同時生效。清除餐別後恢復全部餐別。
+for (const role of ['nutritionist', 'coach']) {
+  test(`${role} combines player and multiple meal filters`, () => {
+    const players = [{ id: 'p1', name: '甲' }, { id: 'p2', name: '乙' }];
+    const data = {
+      date: '2026-11-16', players,
+      records: players.flatMap(player => ['早餐', '午餐', '晚餐'].map((meal, i) => record({
+        id: `${player.id}-${i}`, playerId: player.id, player, meal, items: [{ id: 'item' }],
+      }))),
+    };
+    const html = view('records', data, role, '', { recordPlayer: 'p2', recordMeals: ['早餐', '晚餐'] });
+    assert.match(html, /data-id="p2-0"/);
+    assert.match(html, /data-id="p2-2"/);
+    assert.doesNotMatch(html, /data-id="p2-1"|data-id="p1-/);
+    assert.match(view('records', data, role), /共 6 筆/);
+    assert.match(view('records', data, role, '', { recordPlayer: 'missing' }), /沒有符合篩選條件/);
+  });
+}
