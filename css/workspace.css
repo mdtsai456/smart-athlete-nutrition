@@ -1234,10 +1234,6 @@ footer {
   color: var(--muted);
   margin-top: 4px;
 }
-.trend {
-  font-size: 18px;
-  color: #5d7084;
-}
 .daily-column {
   display: flex;
   flex-direction: column;
