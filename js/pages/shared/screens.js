@@ -85,6 +85,13 @@ export function view(route, d, role, filter = "", state = {}) {
           : "已審核的餐點可重新開啟後再修正。較晚的紀錄在上面。"
         : "較晚的紀錄在上面。";
     const filters = canFilter ? `<div class="record-filters"><label class="record-player-filter" for="record-player">球員<select id="record-player"><option value="">全部球員</option>${(d.players || []).map((p) => `<option value="${esc(p.id)}" ${p.id === playerFilter ? "selected" : ""}>${esc(p.name)}${p.number != null ? ` #${esc(p.number)}` : ""}</option>`).join("")}</select></label><fieldset class="record-meal-filters"><legend>餐別（可複選，未勾選時顯示全部）</legend>${MEAL_TYPES.map(([, label]) => `<label><input type="checkbox" name="record-meal" value="${esc(label)}" ${mealFilters.includes(label) ? "checked" : ""}>${label}</label>`).join("")}</fieldset><span class="muted" role="status">共 ${records.length} 筆</span></div>` : "";
+    // 【測試】故意使用不存在的圖片網址，確認載入失敗時的替代畫面
+    const testImage = {
+      url: "/test-images/image-does-not-exist.jpg"
+    };
+
+// // 【測試】用測試資料取代原本的餐點圖片
+// mealImage(testImage, { compact: true })
     const tone = (record) =>
       record.status === "reviewed" ? "green" : record.reason && record.status === "draft" ? "orange" : "neutral";
     return `<section class="panel"><div class="panel-heading"><div><h2>每日飲食紀錄</h2><p>${reviewHint}</p></div>${role === "player" ? button("＋ 新增紀錄", "record", true) : ""}</div>${filters}${records.length ? `<div class="table-wrap"><table><thead><tr><th>球員</th><th>餐別 / 時間</th><th>餐點內容</th><th>熱量</th><th>狀態</th><th></th></tr></thead><tbody>${records.map((r) => `<tr><td><div class="person">${avatar(r.player)}<strong>${esc(r.player.name)}</strong></div></td><td>${r.meal}<small>${r.date} ${r.time}</small></td><td class="food-names"><div class="meal-record-food">${mealImage(r.image, { compact: true })}<span>${esc(recordFoods(r))}</span></div></td><td><strong>${r.nutrition.calories}</strong> kcal</td><td>${badge(r.statusLabel, tone(r))}${r.reason ? `<small>${esc(r.reason)}</small>` : ""}${r.analysis ? `<small>${esc(r.analysis.statusLabel)}</small>` : ""}</td><td><span class="item-actions">${role === "nutritionist" && r.status === "submitted" ? `<button type="button" class="btn" data-action="correct-meal" data-id="${esc(r.id)}">修正</button><button type="button" class="btn primary" data-action="review-meal" data-id="${esc(r.id)}">審核通過</button>` : ""}${role === "nutritionist" && r.status === "reviewed" ? `<button type="button" class="btn" data-action="reopen-meal" data-id="${esc(r.id)}">重新開啟</button>` : ""}<button class="icon-btn" data-action="record-detail" data-id="${esc(r.id)}" aria-label="查看紀錄">${icon("chevron")}</button></span></td></tr>`).join("")}</tbody></table></div>` : empty(playerFilter || mealFilters.length ? "沒有符合篩選條件的飲食紀錄，請調整球員或餐別。" : "這一天還沒有飲食紀錄")}</section>`;

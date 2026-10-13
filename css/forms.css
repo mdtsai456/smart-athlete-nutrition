@@ -627,3 +627,70 @@ dialog .plate-camera {
 .meal-image-thumb.meal-image-placeholder { display: grid; place-items: end center; padding: 4px; background: #e7f1f7; }
 .meal-image-thumb > span { font-size: 10px; color: #34546f; }
 .guide > .meal-image-placeholder { min-height: 220px; margin-top: 16px; }
+
+
+/* 餐盤圖片載入失敗時的外層容器，避免備用圖影響其他版面。 */
+.meal-image-fallback-wrap {
+  min-width: 0;
+}
+
+/* 只有實拍圖片載入失敗或沒有網址時，才顯示備用區塊。 */
+.meal-image-fallback[hidden] {
+  display: none;
+}
+
+/* 備用範例圖與提示文字垂直排列。 */
+.meal-image-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  color: #54758d;
+  text-align: center;
+  font-size: 12px;
+}
+
+/* 範例圖使用與原本餐盤照片一致的容器寬度。 */
+.meal-image-fallback > img {
+  display: block;
+  max-width: 100%;
+  object-fit: contain;
+  background: #e7f1f7;
+  border-radius: 8px;
+}
+
+/* 明確標示照片載入失敗。 */
+.meal-image-error-text {
+  color: #a94242;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 縮圖模式的範例圖維持小尺寸，不撐大飲食紀錄表格。 */
+.meal-image-fallback-wrap.compact .meal-image-fallback > img {
+  width: 58px;
+  height: 58px;
+}
+
+/* 縮圖模式的提示文字維持精簡。 */
+.meal-image-fallback-wrap.compact .meal-image-fallback {
+  max-width: 100px;
+  gap: 3px;
+  font-size: 10px;
+}
+
+/* 一般模式的範例圖使用原本照片區域的尺寸。 */
+.meal-image-fallback-wrap:not(.compact) .meal-image-fallback > img {
+  width: 100%;
+  max-height: 345px;
+  min-height: 220px;
+}
+
+/* 一般模式的錯誤提示文字可清楚辨識。 */
+.meal-image-fallback-wrap:not(.compact) .meal-image-fallback {
+  padding: 12px;
+  background: #e7f1f7;
+  border-radius: 12px;
+}
