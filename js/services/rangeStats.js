@@ -81,15 +81,67 @@ function trendOf(recordedDays) {
 }
 
 function statusOf(row) {
-  if (!row.recordedMeals || row.completeness < 60) return ["紀錄不足", "orange"];
-  if ([row.calorieRate, row.proteinRate, row.carbRate, row.fatRate].some((value) => value == null))
-    return ["未設定", "neutral"];
-  if (row.calorieRate > 115) return ["熱量偏高", "orange"];
-  if (row.calorieRate < 80) return ["熱量不足", "orange"];
-  if (row.proteinRate < 80) return ["蛋白質不足", "orange"];
-  if (row.carbRate < 80) return ["碳水不足", "orange"];
-  if (row.fatRate > 130) return ["脂肪偏高", "orange"];
-  return ["進度良好", "green"];
+  //把回傳的狀態改成陣列，即可同時顯示多個狀態
+  const alerts_array = [];
+
+  //合併檢查：如果四個指標全部都沒有資料 (皆為 null)，直接合併回傳一項即可
+  if (
+    [row.calorieRate, row.proteinRate, row.carbRate, row.fatRate].every(
+      (value) => value == null
+    )
+  ) {
+    return [
+      {
+        nutrient: "all",
+        label: "皆未設定目標",
+        tone: "neutral",
+      },
+    ];
+  }
+
+  //有那些需要檢查的項目熱量、蛋白質等
+  const checks = [
+    {
+      key: "calorieRate",label: "熱量",low: 80,high: 115,unit: "%",},
+    {key: "proteinRate",label: "蛋白質",low: 80,high: null,unit: "%",},
+    {key: "carbRate",label: "碳水",low: 80,high: null,unit: "%",},
+    {key: "fatRate",label: "脂肪",low: null,high: 130,unit: "%",},
+  ];
+
+    for (const item of checks) {
+    const rate = row[item.key];
+
+    if (rate == null) {
+      alerts_array.push({
+        nutrient: item.key,
+        label: `${item.label}未設定目標`,
+        tone: "neutral",
+      });
+      continue;
+    }
+
+    if (item.low != null && rate < item.low) {
+      alerts_array.push({
+        nutrient: item.key,
+        label: `${item.label}不足`,
+        tone: "orange",
+      });
+    } else if (item.high != null && rate > item.high) {
+      alerts_array.push({
+        nutrient: item.key,
+        label: `${item.label}偏高`,
+        tone: "orange",
+      });
+    } else{
+      alerts_array.push({
+        nutrient: item.key,
+        label: `${item.label}符合設定範圍`,
+        tone: "green",
+      });
+    }
+  }
+
+  return alerts_array;
 }
 
 /** 各日使用當日計畫或有效的期間目標。達標日的熱量是 80%–115%，蛋白質至少 80%。 */
@@ -124,8 +176,8 @@ export function playerRange(player, records, dates) {
     trend: trendOf(recordedDays),
     complete: expectedMeals > 0 && recordedMeals === expectedMeals,
   };
-  const [status, tone] = statusOf(row);
-  return { ...row, status, tone };
+  const alerts = statusOf(row);
+  return { ...row, alerts }; // 將完整的物件陣列傳給前端
 }
 
 /** 平均不含完全沒紀錄的球員。 */
@@ -142,6 +194,8 @@ export function rangeSummary(players, records, dates) {
     calorieRate: average("calorieRate"),
     proteinRate: average("proteinRate"),
     completePlayers: rows.filter((row) => row.complete).length,
-    attentionPlayers: rows.filter((row) => row.tone === "orange" || row.tone === "red").length,
+    attentionPlayers: rows.filter((row) => 
+      row.alerts.some((alert) => alert.tone === "orange" || alert.tone === "red")
+    ).length,
   };
 }
