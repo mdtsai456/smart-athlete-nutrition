@@ -284,5 +284,6 @@ export const seed = {
   foods,
   foodNutrients,
   nutritionTargets: [],
+  targetProfiles: [],
   ...meals,
 };

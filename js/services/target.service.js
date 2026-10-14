@@ -48,21 +48,74 @@ export function saveAthleteTargetTemplates(athleteId, templates) {
  * @returns {Object} 驗算結果（diff, isValidCarb, warnings）
  */
 export function validateTargetValues(target, weight) {
-    const pCalories = target.proteinPerKg * weight * 4;
-    const fCalories = target.fatPerKg * weight * 9; // 或依總熱量百分比換算
-    const calculatedCarbs = (target.calories - pCalories - fCalories) / 4;
-    const minCarbs = target.carbMinPerKg * weight;
+  const calories = Number(target.calories);
+  const proteinPerKg = Number(target.proteinPerKg);
+  const fatPerKg = Number(target.fatPerKg);
+  const carbMinPerKg = Number(target.carbMinPerKg);
+  const bodyWeight = Number(weight);
 
-    // 檢查碳水是否達到所選日別的最低需求
-    const isValidCarb = calculatedCarbs >= minCarbs;
+  const validInputs = [
+    calories,
+    proteinPerKg,
+    fatPerKg,
+    carbMinPerKg,
+    bodyWeight,
+  ].every(Number.isFinite);
 
+  if (
+    !validInputs ||
+    calories <= 0 ||
+    proteinPerKg <= 0 ||
+    fatPerKg <= 0 ||
+    carbMinPerKg < 0 ||
+    bodyWeight <= 0
+  ) {
     return {
-        calculatedCarbs,
-        minCarbs,
-        isValidCarb,
-        // 換算熱量與目標的差距須在 ±5 kcal 內
-        isCalorieMatch: true 
+      calculatedCarbs: null,
+      minCarbs: null,
+      energy: null,
+      difference: null,
+      isValidCarb: false,
+      isCalorieMatch: false,
+      valid: false,
+      errors: ["請輸入有效的熱量、體重與營養素目標。"],
     };
+  }
+
+  const protein = proteinPerKg * bodyWeight;
+  const fat = fatPerKg * bodyWeight;
+  const calculatedCarbs =
+    (calories - protein * 4 - fat * 9) / 4;
+  const minCarbs = carbMinPerKg * bodyWeight;
+
+  const energy = protein * 4 + calculatedCarbs * 4 + fat * 9;
+  const difference = Math.round((energy - calories) * 10) / 10;
+
+  const isValidCarb =
+    calculatedCarbs >= minCarbs && calculatedCarbs >= 0;
+
+  const isCalorieMatch =
+    Math.abs(difference) <= ENERGY_TOLERANCE;
+
+  return {
+    protein,
+    fat,
+    calculatedCarbs,
+    minCarbs,
+    energy,
+    difference,
+    isValidCarb,
+    isCalorieMatch,
+    valid: isCalorieMatch && calculatedCarbs >= 0,
+    errors: [
+      ...(calculatedCarbs < 0
+        ? ["蛋白質與脂肪已超出熱量預算，無法分配碳水。"]
+        : []),
+      ...(!isCalorieMatch
+        ? [`熱量差距超過容許範圍 ±${ENERGY_TOLERANCE} kcal。`]
+        : []),
+    ],
+  };
 }
 export const ENERGY_TOLERANCE = 5;
 // 營養師可以修改預設值，並儲存確認後的目標。
