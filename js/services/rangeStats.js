@@ -101,8 +101,7 @@ function statusOf(row) {
 
   //有那些需要檢查的項目熱量、蛋白質等
   const checks = [
-    {
-      key: "calorieRate",label: "熱量",low: 80,high: 115,unit: "%",},
+    {key: "calorieRate",label: "熱量",low: 80,high: 115,unit: "%",},
     {key: "proteinRate",label: "蛋白質",low: 80,high: null,unit: "%",},
     {key: "carbRate",label: "碳水",low: 80,high: null,unit: "%",},
     {key: "fatRate",label: "脂肪",low: null,high: 130,unit: "%",},
@@ -154,6 +153,38 @@ export function playerRange(player, records, dates) {
       .filter((value) => value != null);
     return ratios.length ? Math.round(ratios.reduce((sum, value) => sum + value, 0) / ratios.length * 100) : null;
   };
+
+// 計算單一營養素的攝取量、目標及差距（區分單日數值與區間日均）
+  const isMultiDay = dates.length > 1;
+  const prefix = isMultiDay ? "日均 " : "";
+
+  const nutrientDetail = (key, unit) => {
+    const validDays = recordedDays.filter((day) => {
+      const goal = Number(day.target[key]);
+      return Number.isFinite(goal) && goal > 0;
+    });
+    if (!validDays.length) return null;
+
+    const intake = Math.round(
+      validDays.reduce((sum, day) => sum + day.totals[key], 0) / validDays.length
+    );
+    const target = Math.round(
+      validDays.reduce((sum, day) => sum + Number(day.target[key]), 0) / validDays.length
+    );
+    const diff = Math.abs(target - intake);
+
+    return {
+      intake,
+      target,
+      diff,
+      unit,
+      isMultiDay,
+      // 單日顯示：「80／100 g，距目標 20 g」
+      // 區間顯示：「日均 80／100 g，距目標 20 g」
+      text: `${prefix}${intake}／${target} ${unit}，距目標 ${diff} ${unit}`,
+    };
+  };
+
   const recordedMeals = days.reduce((sum, day) => sum + day.recordedMeals, 0);
   const expectedMeals = dates.length * MAIN_MEALS.length;
   const hitDays = recordedDays.filter((day) => {
@@ -167,6 +198,13 @@ export function playerRange(player, records, dates) {
     proteinRate: averageRate("protein"),
     carbRate: averageRate("carbs"),
     fatRate: averageRate("fat"),
+
+    //將四個營養素的詳細資料放進 row 傳給前端
+    calorieDetail: nutrientDetail("calories", "kcal"),
+    proteinDetail: nutrientDetail("protein", "g"),
+    carbDetail: nutrientDetail("carbs", "g"),
+    fatDetail: nutrientDetail("fat", "g"),
+
     recordedMeals,
     expectedMeals,
     completeness: expectedMeals ? Math.round((recordedMeals / expectedMeals) * 100) : 0,
