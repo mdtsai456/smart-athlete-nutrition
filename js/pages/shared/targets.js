@@ -90,7 +90,6 @@ export async function mountTargetProfiles(
       ? { ...saved.inputJson }
       : defaultDraft(player, dayType);
 
-    // 儲存資料中的日期不應覆蓋目前正在編輯的生效日期。
     draft.training = dayLabel[dayType];
     reviewed = false;
     draw();
@@ -111,7 +110,7 @@ export async function mountTargetProfiles(
       <section class="panel">
         <h2>訓練日／休息日目標範本</h2>
         <p class="plan-hint">
-          兩組目標獨立儲存。這裡儲存的是日別目標範本，不是當日計畫。
+          兩組目標獨立儲存。可分別儲存訓練日與休息日目標，未單獨設定時將作為預設依據。
         </p>
 
         <label class="field">
@@ -130,18 +129,18 @@ export async function mountTargetProfiles(
           目標類型
           <select name="profileType">
             <option value="training" ${dayType === "training" ? "selected" : ""}>
-              訓練日
+              訓練日目標
             </option>
             <option value="rest" ${dayType === "rest" ? "selected" : ""}>
-              休息日
+              休息日目標
             </option>
           </select>
         </label>
 
         <p class="plan-hint">
           ${saved
-            ? `目前生效版本：${esc(saved.startDate)}`
-            : "此類型尚未設定已儲存的目標，以下為起始值。"}
+            ? `目前 ${dayLabel[dayType]} 生效版本：${esc(saved.startDate)}`
+            : `此球員目前尚無 ${dayLabel[dayType]} 的已儲存目標，以下為系統起始值。`}
         </p>
 
         <form id="target-profile-form">
@@ -182,10 +181,16 @@ export async function mountTargetProfiles(
 
           <div class="form-error" role="alert"></div>
 
-          <button class="btn primary" type="submit"
-            ${!result.valid ? "disabled" : ""}>
-            儲存${dayLabel[dayType]}目標
-          </button>
+          <div class="button-group" style="display: flex; gap: 10px; margin-top: 15px;">
+            <button class="btn primary" type="submit" name="saveTraining"
+              ${!result.valid ? "disabled" : ""}>
+              儲存訓練日目標
+            </button>
+            <button class="btn secondary" type="button" id="save-rest-btn"
+              ${!result.valid ? "disabled" : ""}>
+              儲存休息日目標
+            </button>
+          </div>
         </form>
       </section>
     `;
@@ -204,7 +209,6 @@ export async function mountTargetProfiles(
       }
 
       if (field.name !== "reviewed") reviewed = false;
-
       updateResult();
     });
 
@@ -213,19 +217,26 @@ export async function mountTargetProfiles(
         dayType = event.target.value;
         await loadProfile();
       }
-
       if (event.target.name === "profileAthlete") {
         athleteId = event.target.value;
         await loadProfile();
       }
-
       if (event.target.name === "reviewed") {
         reviewed = event.target.checked;
       }
     });
 
+    // 支援獨立儲存休息日按鈕事件
+    root.querySelector("#save-rest-btn").addEventListener("click", async () => {
+      await handleProfileSubmit("rest");
+    });
+
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
+      await handleProfileSubmit(dayType);
+    });
+
+    async function handleProfileSubmit(targetDayType) {
       if (saving) return;
 
       const result = calculatePlan(draft);
@@ -243,28 +254,24 @@ export async function mountTargetProfiles(
       }
 
       saving = true;
-      const button = form.querySelector('button[type="submit"]');
-      button.disabled = true;
-
       try {
         await saveTargetProfile(
           athleteId,
-          dayType,
+          targetDayType,
           startDate,
-          { ...draft, training: dayLabel[dayType] },
+          { ...draft, training: dayLabel[targetDayType] },
           reviewed,
         );
 
         await loadProfile();
         await onSaved?.();
-        notify?.(`${dayLabel[dayType]}目標已儲存`);
+        notify?.(`${dayLabel[targetDayType]}目標已成功儲存`);
       } catch (error) {
         errorBox.textContent = error.message;
       } finally {
         saving = false;
-        button.disabled = !calculatePlan(draft).valid;
       }
-    });
+    }
   }
 
   function updateResult() {
@@ -273,15 +280,14 @@ export async function mountTargetProfiles(
     if (!form) return;
 
     form.querySelector("#profile-result").innerHTML = resultView(result);
-
     const review = form.querySelector(".plan-review");
     review.hidden = !result.warnings.length;
 
     form.querySelector(".form-error").textContent = "";
-    form.querySelector('button[type="submit"]').disabled =
-      !result.valid || saving;
+    const isValid = result.valid && !saving;
+    form.querySelector('button[type="submit"]').disabled = !isValid;
+    root.querySelector("#save-rest-btn").disabled = !isValid;
   }
-
   await loadProfile();
 }
 
@@ -297,19 +303,90 @@ export function mountTargets(
     result = calculatePlan(draft),
     saving = false,
     dirty = false;
+
+  // 非同步載入草稿：優先讀取當日計畫，若無則讀取對應類型的最新目標記錄
+  async function loadDraft() {
+    draft = planDraft(player, date);
+    const hasDailyPlan = player.dailyPlan?.localDate === date && player.dailyPlan.inputJson;
+
+    if (!hasDailyPlan) {
+      try {
+        const profiles = await listTargetProfiles(player.id);
+        
+        //根據當前的 draft.training 決定要撈取哪種類型的範本
+        const targetType = draft.training === "訓練日" ? "training" : "rest";
+        const latestProfile = profiles
+          .filter(p => p.trainingType === targetType)
+          .sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+
+        if (latestProfile && latestProfile.inputJson) {
+          draft = {
+            ...draft,
+            ...latestProfile.inputJson,
+            training: draft.training
+          };
+        }
+      } catch (error) {
+        console.error("讀取最新目標記錄失敗", error);
+      }
+    }
+    draw();
+  }
+
   function draw() {
     result = calculatePlan(draft);
-    root.innerHTML = `<div class="planner-context"><label>球員<select id="target-player">${data.players.map((p) => `<option value="${p.id}" ${p.id === player.id ? "selected" : ""}>${esc(p.name)} #${p.number}</option>`).join("")}</select></label><span>${dirty ? `${date} · 尚有未儲存變更` : rangeNote(player, date)}</span></div>${athleteSummary(player)}<form id="nutrition-plan"><div class="planner-layout"><section class="panel planner-editor"><div class="plan-step"><span class="step-index">1</span><div><h2>決定總熱量</h2><div class="plan-fields">${numberField("calories", "每日熱量", draft.calories, "kcal", "1")}${numberField("weight", "計算體重", draft.weight, "kg")}</div><p class="plan-hint">這個體重只用來換算這一天的 g/kg，存在當日計畫裡，不會改球員基本資料。</p></div></div><div class="plan-step"><span class="step-index">2</span><div><h2>設定蛋白質</h2>${numberField("proteinKg", "每公斤體重", draft.proteinKg, "g/kg")}</div></div><div class="plan-step"><span class="step-index">3</span><div><h2>設定脂肪底線</h2><div class="plan-fields fat-fields">${numberField("fatValue", "脂肪底線", draft.fatValue, draft.fatUnit === "kg" ? "g/kg" : "%")}<label class="plan-field">計算方式<select name="fatUnit"><option value="kg" ${draft.fatUnit === "kg" ? "selected" : ""}>依體重 g/kg</option><option value="percent" ${draft.fatUnit === "percent" ? "selected" : ""}>依總熱量 %</option></select></label></div><p class="plan-hint">剩餘熱量自動分配給碳水。</p></div></div><div class="plan-step"><span class="step-index">4</span><div><h2>檢查訓練需求</h2><div class="plan-fields"><label class="plan-field">當日類型<select name="training">${["訓練日", "休息日"].map((x) => `<option ${draft.training === x ? "selected" : ""}>${x}</option>`).join("")}</select></label>${numberField("carbMinimum", "碳水最低需求", draft.carbMinimum, "g/kg")}</div><p class="plan-hint">切換自動帶入：訓練日 6、休息日 4 g/kg，營養師可再調整。此為需求檢查值，實際碳水仍由剩餘熱量計算。</p></div></div><details class="manual-plan" ${draft.manual ? "open" : ""}><summary>手動微調營養素</summary><label class="manual-toggle"><input name="manual" type="checkbox" ${draft.manual ? "checked" : ""}> 啟用手動調整（保留熱量驗算）</label><div class="plan-fields manual-fields">${["protein", "fat", "carbs"].map((key, i) => numberField(key, ["蛋白質", "脂肪", "碳水"][i], draft.manual ? draft[key] : result.target?.[key] || 0, "g")).join("")}</div><p class="plan-hint">修改前面的分配條件後，會回到自動計算。</p></details></section><aside class="panel planner-summary"><div class="summary-heading"><span class="step-index">5</span><h2>驗算與確認</h2></div><div id="plan-results" aria-live="polite">${resultView(result)}</div><label class="plan-review" ${result.warnings.length ? "" : "hidden"}><input name="reviewed" type="checkbox"> 已檢查上述提醒，確認採用此目標</label><div class="form-error" role="alert"></div><button class="btn primary plan-save" type="submit">確認並儲存目標</button><p class="plan-hint">只為 ${date} 儲存 ${esc(player.name)} 的每日計畫。四項目標由系統重算，不會套到其他日期。</p></aside></div></form>`;
+    
+    root.innerHTML = `<div class="planner-context"><label>球員<select id="target-player">${data.players.map((p) => `<option value="${p.id}" ${p.id === player.id ? "selected" : ""}>${esc(p.name)} #${p.number}</option>`).join("")}</select></label><span>${dirty ? `${date} · 尚有未儲存變更` : rangeNote(player, date)}</span></div>${athleteSummary(player)}<form id="nutrition-plan"><div class="planner-layout"><section class="panel planner-editor"><div class="plan-step"><span class="step-index">1</span><div><h2>決定總熱量</h2><div class="plan-fields">${numberField("calories", "每日熱量", draft.calories, "kcal", "1")}${numberField("weight", "計算體重", draft.weight, "kg")}</div><p class="plan-hint">這個體重只用來換算這一天的 g/kg，存在當日計畫裡，不會改球員基本資料。</p></div></div><div class="plan-step"><span class="step-index">2</span><div><h2>設定蛋白質</h2>${numberField("proteinKg", "每公斤體重", draft.proteinKg, "g/kg")}</div></div><div class="plan-step"><span class="step-index">3</span><div><h2>設定脂肪底線</h2><div class="plan-fields fat-fields">${numberField("fatValue", "脂肪底線", draft.fatValue, draft.fatUnit === "kg" ? "g/kg" : "%")}<label class="plan-field">計算方式<select name="fatUnit"><option value="kg" ${draft.fatUnit === "kg" ? "selected" : ""}>依體重 g/kg</option><option value="percent" ${draft.fatUnit === "percent" ? "selected" : ""}>依總熱量 %</option></select></label></div><p class="plan-hint">剩餘熱量自動分配給碳水。</p></div></div><div class="plan-step"><span class="step-index">4</span><div><h2>檢查訓練需求</h2><div class="plan-fields"><label class="plan-field">當日類型<select name="training">${["訓練日", "休息日"].map((x) => `<option ${draft.training === x ? "selected" : ""}>${x}</option>`).join("")}</select></label>${numberField("carbMinimum", "碳水最低需求", draft.carbMinimum, "g/kg")}</div><p class="plan-hint">切換自動帶入：訓練日 6、休息日 4 g/kg，營養師可再調整。此為需求檢查值，實際碳水仍由剩餘熱量計算。</p></div></div><details class="manual-plan" ${draft.manual ? "open" : ""}><summary>手動微調營養素</summary><label class="manual-toggle"><input name="manual" type="checkbox" ${draft.manual ? "checked" : ""}> 啟用手動調整（保留熱量驗算）</label><div class="plan-fields manual-fields">${["protein", "fat", "carbs"].map((key, i) => numberField(key, ["蛋白質", "脂肪", "碳水"][i], draft.manual ? draft[key] : result.target?.[key] || 0, "g")).join("")}</div><p class="plan-hint">修改前面的分配條件後，會回到自動計算。</p></details></section><aside class="panel planner-summary"><div class="summary-heading"><span class="step-index">5</span><h2>驗算與確認</h2></div><div id="plan-results" aria-live="polite">${resultView(result)}</div><label class="plan-review" ${result.warnings.length ? "" : "hidden"}><input name="reviewed" type="checkbox"> 已檢查上述提醒，確認採用此目標</label><div class="form-error" role="alert"></div><button class="btn secondary" type="button" id="save-training-profile-btn" style="width: 100%; margin-bottom: 10px;">儲存為範本</button><button class="btn primary plan-save" type="submit">確認並儲存目標</button><p class="plan-hint">只為 ${date} 儲存 ${esc(player.name)} 的每日計畫。四項目標由系統重算，不會套到其他日期。</p></aside></div></form>`;
+
     root
       .querySelectorAll(".manual-fields input")
       .forEach((el) => (el.disabled = !draft.manual));
     root.querySelector(".plan-save").disabled = !result.valid;
+
+    // 儲存為範本按鈕
+    root.querySelector("#save-training-profile-btn")?.addEventListener("click", async (e) => {
+      e.preventDefault(); 
+      if (saving) return;
+
+      const targetDayType = draft.training === "訓練日" ? "training" : "rest";
+      const dayLabelName = draft.training;
+      const errorBox = root.querySelector(".form-error");
+      const reviewed = root.querySelector('[name="reviewed"]')?.checked || false;
+
+      if (!result.valid) {
+        if (errorBox) errorBox.textContent = result.errors.join(" ");
+        return;
+      }
+
+      if (result.warnings.length && !reviewed) {
+        if (errorBox) errorBox.textContent = "請先檢查提醒並勾選確認。";
+        return;
+      }
+
+      saving = true;
+      try {
+        await saveTargetProfile(
+          player.id,
+          targetDayType,
+          date,
+          { ...draft, training: dayLabelName },
+          reviewed
+        );
+        notify?.(`${dayLabelName}目標已儲存為範本`);
+      } catch (error) {
+        if (errorBox) errorBox.textContent = error.message;
+      } finally {
+        saving = false;
+      }
+    });
   }
+
   function markDirty() {
     dirty = true;
     root.querySelector(".planner-context > span").textContent =
       `${date} · 尚有未儲存變更`;
   }
+
   function recalculate() {
     result = calculatePlan(draft);
     root.querySelector("#plan-results").innerHTML = resultView(result);
@@ -323,6 +400,7 @@ export function mountTargets(
         .querySelectorAll(".manual-fields input")
         .forEach((el) => (el.value = result.target?.[el.name] ?? 0));
   }
+
   root.addEventListener("input", (e) => {
     if (e.target.type !== "number") return;
     markDirty();
@@ -336,13 +414,13 @@ export function mountTargets(
     }
     recalculate();
   });
-  root.addEventListener("change", (e) => {
+
+  root.addEventListener("change", async (e) => {
     if (e.target.id === "target-player") {
       player = data.players.find((p) => p.id === e.target.value);
       dirty = false;
       onPlayer(player.id);
-      draft = planDraft(player, date);
-      draw();
+      loadDraft();
       return;
     }
     if (e.target.name === "manual") {
@@ -361,12 +439,34 @@ export function mountTargets(
         draft.manual = false;
         draw();
       } else {
-        draft = changePlanDay(draft, e.target.value);
-        root.querySelector('[name="carbMinimum"]').value = draft.carbMinimum;
-        recalculate();
+        const newTypeLabel = e.target.value;
+        draft = changePlanDay(draft, newTypeLabel);
+        
+        //切換選單時，動態去撈取新類型的範本來替換數字
+        try {
+          const profiles = await listTargetProfiles(player.id);
+          const targetType = newTypeLabel === "訓練日" ? "training" : "rest";
+          const latestProfile = profiles
+            .filter(p => p.trainingType === targetType)
+            .sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+
+          if (latestProfile && latestProfile.inputJson) {
+            draft = {
+              ...draft,
+              ...latestProfile.inputJson,
+              training: newTypeLabel
+            };
+          }
+        } catch (error) {
+          console.error("切換類型時讀取記錄失敗", error);
+        }
+        
+        // 使用 draw() 重新渲染整個表單，使熱量/營養素輸入框更新為新範本的數字
+        draw();
       }
     }
   });
+
   root.addEventListener("submit", async (e) => {
     if (e.target.id !== "nutrition-plan") return;
     e.preventDefault();
@@ -389,5 +489,6 @@ export function mountTargets(
       saving = false;
     }
   });
-  draw();
+  
+  loadDraft();
 }
