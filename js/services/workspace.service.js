@@ -5,7 +5,7 @@
  */
 import { accounts, athleteCoaches, coaches, nutritionists, organizations, players } from "../api/athlete.api.js";
 import { collection } from "../api/api.js";
-import { listDailyPlans } from "../api/plan.api.js";
+import { listDailyPlans, listTargetTemplates } from "../api/plan.api.js";
 import { foodNutrients, foods } from "../api/food.api.js";
 import { nutritionTargets } from "../api/target.api.js";
 import { today } from "../api/seed.js";
@@ -37,6 +37,7 @@ async function tables() {
     analysisRows,
     imageRows,
     dailyPlanRows,
+    targetTemplateRows,
   ] = await Promise.all([
     players.list(),
     organizations.list(),
@@ -54,6 +55,7 @@ async function tables() {
     collection("mealAnalyses").list(),
     collection("mealImages").list(),
     listDailyPlans(),
+    listTargetTemplates(),
   ]);
   return {
     players: playerRows,
@@ -72,6 +74,7 @@ async function tables() {
     mealAnalyses: analysisRows,
     mealImages: imageRows,
     dailyPlans: dailyPlanRows,
+    targetTemplates: targetTemplateRows,
   };
 }
 /** 依登入者權限與指定日期篩選球員。回傳資料包含菜色、餐點與當日目標。 */
@@ -133,6 +136,9 @@ export async function loadPage(date = today, accountId = null) {
         ).length,
       },
       players: summaries,
+      targetTemplates: data.targetTemplates.filter((row) =>
+        visible.has(row.athleteId),
+      ),
       foods,
       nutrients: data.nutrients,
       records,

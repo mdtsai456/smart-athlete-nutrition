@@ -43,7 +43,8 @@ export function view(route, d, role, filter = "", state = {}) {
     return coachDashboard(d, state.comparisonPlayer);
   if (route === "dashboard" && role === "player") return playerDashboard(d);
   if (route === "profile" && role === "player") return profileView(d);
-  if (route === "targets") return '<div id="targets-root"></div>';
+  if (route === "targets")
+    return '<div id="target-templates-root"></div><div id="daily-target-root"></div>';
   if (route === "foods")
     return `<section class="panel"><div class="panel-heading"><div><h2>所有菜色 <span class="count">${d.foods.length}</span></h2><p>食物主檔不含營養數值，每 100 g 來自營養素列</p></div><div class="heading-actions">${button("匯入 Excel", "import-food")}${button(icon("plus") + " 新增菜色", "new-food", true)}</div></div><div class="toolbar"><label class="search">${icon("search")}<input id="search" placeholder="搜尋菜色名稱" value="${esc(filter)}"></label></div><div class="food-grid">${
       d.foods

@@ -21,6 +21,19 @@ export function latestDailyPlan(plans, athleteId, date) {
     row.athleteId === athleteId && row.localDate === date &&
     (!latest || row.revision > latest.revision) ? row : latest, null);
 }
+/** 取得指定球員與日別的最新目標範本。 */
+export function latestTargetTemplate(templates, athleteId, training) {
+  return (templates || []).reduce((latest, row) =>
+    row.athleteId === athleteId && row.training === training &&
+    (!latest || row.revision > latest.revision) ? row : latest, null);
+}
+/** 載入日別範本；未儲存時以目前有效目標作為起始值。 */
+export function targetTemplateDraft(player, templates, date, training) {
+  const saved = latestTargetTemplate(templates, player.id, training);
+  if (saved?.inputJson) return { ...saved.inputJson };
+  const draft = planDraft({ ...player, dailyPlan: null }, date);
+  return changePlanDay(draft, training);
+}
 export function activeTargetRows(rows, athleteId, date) {
   return (rows || []).filter(
     (row) =>

@@ -1,6 +1,6 @@
 /**
  * 營養目標測試。
- * 測試營養分配、熱量驗算、需求提醒、依球員與日期儲存，以及舊版計畫。
+ * 測試營養分配、熱量驗算、日別範本、需求提醒與每日計畫。
  */
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -8,11 +8,16 @@ import {
   calculatePlan,
   changePlanDay,
   confirmedPlan,
+  latestTargetTemplate,
   planDraft,
   resolveTarget,
+  targetTemplateDraft,
 } from "../js/services/target.service.js";
 import { signIn } from "../js/api/session.js";
-import { saveNutritionPlan } from "../js/api/plan.api.js";
+import {
+  saveNutritionPlan,
+  saveTargetTemplate,
+} from "../js/api/plan.api.js";
 import { loadPage } from "../js/services/workspace.service.js";
 import { seed, today } from "../js/api/seed.js";
 const example = {
@@ -109,6 +114,71 @@ test("saving writes a daily plan and does not copy it onto other dates", async (
   assert.equal(draft.proteinKg, 1.6);
   assert.equal(draft.carbMinimum, 4);
   assert.equal(draft.training, "休息日");
+});
+
+test("training and rest target templates save independently with revisions", async () => {
+  await signIn("acct-n1");
+  const training = await saveTargetTemplate("p1", "訓練日", example);
+  const rest = await saveTargetTemplate("p1", "休息日", {
+    ...example,
+    training: "休息日",
+    calories: 2400,
+    carbMinimum: 4,
+  });
+  assert.equal(training.revision, 1);
+  assert.equal(rest.revision, 1);
+  assert.equal(training.target.calories, 2800);
+  assert.equal(rest.target.calories, 2400);
+  assert.equal(
+    latestTargetTemplate([training, rest], "p1", "訓練日").target.calories,
+    2800,
+  );
+  assert.equal(
+    latestTargetTemplate([training, rest], "p1", "休息日").target.calories,
+    2400,
+  );
+  const page = await loadPage(today);
+  assert.equal(
+    latestTargetTemplate(page.targetTemplates, "p1", "訓練日").target.calories,
+    2800,
+  );
+  assert.equal(
+    latestTargetTemplate(page.targetTemplates, "p1", "休息日").target.calories,
+    2400,
+  );
+
+  const updated = await saveTargetTemplate(
+    "p1",
+    "訓練日",
+    { ...example, calories: 2900 },
+    false,
+    training.revision,
+  );
+  assert.equal(updated.revision, 2);
+  assert.equal(
+    latestTargetTemplate([training, rest, updated], "p1", "訓練日").target
+      .calories,
+    2900,
+  );
+  await assert.rejects(
+    saveTargetTemplate("p1", "訓練日", example, false, training.revision),
+    /已被其他人更新/,
+  );
+
+  const player = { id: "p1", weight: 70, nutritionTargets: [] };
+  assert.equal(
+    targetTemplateDraft(player, [training, rest, updated], today, "休息日")
+      .calories,
+    2400,
+  );
+  assert.equal(
+    targetTemplateDraft(player, [], today, "訓練日").carbMinimum,
+    6,
+  );
+  assert.equal(
+    targetTemplateDraft(player, [], today, "休息日").carbMinimum,
+    4,
+  );
 });
 
 test("overflowing calculations cannot produce an accepted target", () => {

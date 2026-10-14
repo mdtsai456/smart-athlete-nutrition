@@ -296,7 +296,8 @@
 }
 @media (max-width: 520px) {
   .planner-editor,
-  .planner-summary {
+  .planner-summary,
+  .target-template-panel {
     padding: 18px;
   }
   .planner-context {
@@ -335,6 +336,16 @@
   .plan-hint {
     font-size: 11px;
   }
+  .template-tab {
+    flex: 1;
+    min-width: 0;
+    padding: 11px 9px;
+    gap: 6px;
+    font-size: 13px;
+  }
+  .template-tab small {
+    font-size: 10px;
+  }
 }
 .day-carb-summary {
   padding: 16px;
@@ -349,6 +360,66 @@
 }
 .day-carb-summary > span {
   font-weight: 600;
+}
+.target-template-panel {
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.target-template-panel > .panel-heading {
+  padding: 0;
+  margin-bottom: 18px;
+}
+.target-template-panel > .panel-heading h2 {
+  margin: 0 0 8px;
+}
+.target-template-panel > .panel-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.template-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.template-tab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 150px;
+  padding: 12px 14px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+}
+.template-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+.template-tab small {
+  color: #71859b;
+  font-size: 11px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.template-status {
+  min-height: 20px;
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.target-template-panel .planner-editor,
+.target-template-panel .planner-summary {
+  box-shadow: none;
+}
+.target-template-panel .planner-editor {
+  border: 1px solid var(--border);
 }
 /* 運動員摘要與營養分配表單分開顯示。 */
 .athlete-summary {

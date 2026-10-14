@@ -15,6 +15,7 @@ function read() {
   } catch {}
   memory ||= structuredClone(seed);
   if (!Array.isArray(memory.dailyPlans)) memory.dailyPlans = [];
+  if (!Array.isArray(memory.targetTemplates)) memory.targetTemplates = [];
   if (!Array.isArray(memory.mealRevisions)) memory.mealRevisions = [];
   return memory;
 }

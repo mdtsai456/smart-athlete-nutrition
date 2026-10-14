@@ -4,7 +4,11 @@
  */
 import { collection, config, request } from "./api.js";
 import { assertMockWrite, csrfHeader } from "./session.js";
-import { confirmedPlan, latestDailyPlan } from "../services/target.service.js";
+import {
+  confirmedPlan,
+  latestDailyPlan,
+  latestTargetTemplate,
+} from "../services/target.service.js";
 
 export async function saveDailyPlan(body) {
   if (config.mode !== "mock")
@@ -45,6 +49,66 @@ export function saveNutritionPlan(id, date, input, reviewed = false, expectedRev
     warningsAcknowledged: reviewed,
     reason: null,
   });
+}
+
+/** 儲存指定球員的訓練日或休息日目標範本。 */
+export async function saveTargetTemplate(
+  athleteId,
+  training,
+  input,
+  reviewed = false,
+  expectedRevision,
+) {
+  const body = {
+    athleteId,
+    training,
+    input: { ...input, training },
+    warningsAcknowledged: reviewed,
+    expectedRevision,
+  };
+  if (config.mode !== "mock")
+    return request("/target-templates", {
+      method: "PUT",
+      body,
+      headers: csrfHeader(),
+    });
+  const session = await assertMockWrite();
+  if (session.role !== "nutritionist")
+    throw new Error("只有營養師可以儲存目標範本");
+  const plan = confirmedPlan(body.input, body.warningsAcknowledged);
+  const store = collection("targetTemplates");
+  const current = latestTargetTemplate(
+    await store.list(),
+    athleteId,
+    training,
+  );
+  const currentRevision = current?.revision ?? 0;
+  if (
+    body.expectedRevision != null &&
+    Number(body.expectedRevision) !== currentRevision
+  ) {
+    const error = new Error("目標範本已被其他人更新，請重新讀取");
+    error.status = 409;
+    throw error;
+  }
+  if (!(await collection("players").get(athleteId)))
+    throw new Error("找不到球員");
+  return store.create({
+    athleteId,
+    training,
+    revision: currentRevision + 1,
+    inputJson: plan.input,
+    target: plan.target,
+    warningsAcknowledged: !!body.warningsAcknowledged,
+    warningsJson: plan.warnings,
+    confirmedAt: plan.confirmedAt,
+    confirmedByAccountId: session.id,
+  });
+}
+
+export async function listTargetTemplates() {
+  if (config.mode !== "mock") return request("/target-templates");
+  return collection("targetTemplates").list();
 }
 export async function listDailyPlans() {
   if (config.mode !== "mock") return request("/daily-plans");
