@@ -32,9 +32,9 @@ export async function saveTargetProfile(
     throw new Error("請選擇訓練日或休息日");
   }
 
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate || "")) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate || "")) {
     throw new Error("請設定有效的生效日期");
-  }
+    }
 
   const plan = confirmedPlan(input, reviewed);
 

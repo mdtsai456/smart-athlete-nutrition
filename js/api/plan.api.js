@@ -7,37 +7,37 @@ import { assertMockWrite, csrfHeader } from "./session.js";
 import { confirmedPlan, latestDailyPlan } from "../services/target.service.js";
 
 
-/**
- * 儲存球員每週每日的日別設定（訓練日、休息日或未設定）
- * @param {string} athleteId 
- * @param {string} weekId 
- * @param {Object} dailyTypes - 格式如 { "2026-10-12": "training", "2026-10-13": "rest", "2026-10-14": "unconfirmed" }
- */
-export function saveWeeklyPlanDays(athleteId, weekId, dailyTypes) {
-    // 尚未設定的日別顯示「待確認」，不自動當成休息日
-    localStorage.setItem(`weekly_plan_${athleteId}_${weekId}`, JSON.stringify(dailyTypes));
-}
+// /**
+//  * 儲存球員每週每日的日別設定（訓練日、休息日或未設定）
+//  * @param {string} athleteId 
+//  * @param {string} weekId 
+//  * @param {Object} dailyTypes - 格式如 { "2026-10-12": "training", "2026-10-13": "rest", "2026-10-14": "unconfirmed" }
+//  */
+// export function saveWeeklyPlanDays(athleteId, weekId, dailyTypes) {
+//     // 尚未設定的日別顯示「待確認」，不自動當成休息日
+//     localStorage.setItem(`weekly_plan_${athleteId}_${weekId}`, JSON.stringify(dailyTypes));
+// }
 
-/**
- * 儲存單日目標調整（同一天再次儲存會新增版本）
- * @param {string} athleteId 
- * @param {string} date 
- * @param {Object} targetData 
- */
-export function saveSingleDayPlanVersion(athleteId, date, targetData) {
-    const key = `day_versions_${athleteId}_${date}`;
-    const history = JSON.parse(localStorage.getItem(key) || '[]');
+// /**
+//  * 儲存單日目標調整（同一天再次儲存會新增版本）
+//  * @param {string} athleteId 
+//  * @param {string} date 
+//  * @param {Object} targetData 
+//  */
+// export function saveSingleDayPlanVersion(athleteId, date, targetData) {
+//     const key = `day_versions_${athleteId}_${date}`;
+//     const history = JSON.parse(localStorage.getItem(key) || '[]');
     
-    const newVersion = {
-        ...targetData,
-        version: history.length + 1,
-        updatedAt: new Date().toISOString(),
-        isCustomized: true // 標示該日已個別調整
-    };
+//     const newVersion = {
+//         ...targetData,
+//         version: history.length + 1,
+//         updatedAt: new Date().toISOString(),
+//         isCustomized: true // 標示該日已個別調整
+//     };
 
-    history.push(newVersion);
-    localStorage.setItem(key, JSON.stringify(history));
-}
+//     history.push(newVersion);
+//     localStorage.setItem(key, JSON.stringify(history));
+// }
 
 /**
  * 讀取指定日期的最新計畫版本
