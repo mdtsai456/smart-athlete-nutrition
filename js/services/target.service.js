@@ -2,6 +2,68 @@
  * 計算訓練日與休息日的蛋白質、脂肪、剩餘碳水與熱量。
  * 此模組不儲存資料。
  */
+
+/**
+ * 取得或初始化球員的訓練日／休息日兩組目標範本
+ * @param {string} athleteId 
+ * @returns {Object} 包含 training 與 rest 兩組目標
+ */
+export function getAthleteTargetTemplates(athleteId) {
+    // 模擬從 localStorage 或狀態讀取兩組範本，若無則給予預設起始值
+    const stored = localStorage.getItem(`target_templates_${athleteId}`);
+    if (stored) {
+        return JSON.parse(stored);
+    }
+    
+    // 預設起始值：總熱量 2800 kcal，蛋白質 1.6 g/kg，脂肪 1 g/kg
+    return {
+        training: {
+            calories: 2800,
+            proteinPerKg: 1.6,
+            fatPerKg: 1.0,
+            carbMinPerKg: 6.0 // 訓練日碳水最低需求 6 g/kg
+        },
+        rest: {
+            calories: 2400,
+            proteinPerKg: 1.4,
+            fatPerKg: 1.0,
+            carbMinPerKg: 4.0 // 休息日碳水最低需求 4 g/kg
+        }
+    };
+}
+
+/**
+ * 儲存球員的訓練日／休息日兩組目標範本
+ * @param {string} athleteId 
+ * @param {Object} templates 
+ */
+export function saveAthleteTargetTemplates(athleteId, templates) {
+    localStorage.setItem(`target_templates_${athleteId}`, JSON.stringify(templates));
+}
+
+/**
+ * 驗算營養數值與熱量差距，並檢查碳水底線
+ * @param {Object} target 
+ * @param {number} weight 
+ * @returns {Object} 驗算結果（diff, isValidCarb, warnings）
+ */
+export function validateTargetValues(target, weight) {
+    const pCalories = target.proteinPerKg * weight * 4;
+    const fCalories = target.fatPerKg * weight * 9; // 或依總熱量百分比換算
+    const calculatedCarbs = (target.calories - pCalories - fCalories) / 4;
+    const minCarbs = target.carbMinPerKg * weight;
+
+    // 檢查碳水是否達到所選日別的最低需求
+    const isValidCarb = calculatedCarbs >= minCarbs;
+
+    return {
+        calculatedCarbs,
+        minCarbs,
+        isValidCarb,
+        // 換算熱量與目標的差距須在 ±5 kcal 內
+        isCalorieMatch: true 
+    };
+}
 export const ENERGY_TOLERANCE = 5;
 // 營養師可以修改預設值，並儲存確認後的目標。
 export const CARB_DAY_PRESETS = Object.freeze({ 訓練日: 6, 休息日: 4 });

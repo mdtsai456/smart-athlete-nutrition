@@ -15,6 +15,30 @@ import { signIn } from "../js/api/session.js";
 import { saveNutritionPlan } from "../js/api/plan.api.js";
 import { loadPage } from "../js/services/workspace.service.js";
 import { seed, today } from "../js/api/seed.js";
+import { getAthleteTargetTemplates, validateTargetValues } from '../js/services/target.service.js';
+
+describe('訓練日／休息日目標設定與驗算測試', () => {
+    test('訓練日預設碳水應符合 6 g/kg 底線要求', () => {
+        const templates = getAthleteTargetTemplates('athlete_1');
+        expect(templates.training.carbMinPerKg).toBe(6.0);
+        expect(templates.rest.carbMinPerKg).toBe(4.0);
+    });
+
+    test('驗算功能應正確檢查碳水是否達到需求', () => {
+        const mockTarget = {
+            calories: 2800,
+            proteinPerKg: 1.6,
+            fatPerKg: 1.0,
+            carbMinPerKg: 6.0
+        };
+        const weight = 70; // kg
+        const result = validateTargetValues(mockTarget, weight);
+        expect(result.minCarbs).toBe(420); // 6.0 * 70
+    });
+});
+
+
+
 const example = {
   weight: 70,
   calories: 2800,
