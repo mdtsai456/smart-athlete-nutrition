@@ -306,6 +306,16 @@ async function action(name, id) {
   if (currentPage?.onAction?.(name, id)) return;
   if (name === "close") return closeDialog();
   if (name === "retry") return render();
+    // 【新增 1. 篩選重設與無資料提示】清除飲食紀錄的球員與餐別篩選。
+  // 只重設篩選，不動 state.date，所以清除後會顯示所選日期的全部紀錄。
+  if (name === "clear-record-filters") {
+    state.recordPlayer = "";
+    state.recordMeals = [];
+    paintPage();
+    // 清除按鈕重繪後會消失，把鍵盤焦點移到球員下拉，避免焦點掉回頁面頂端。
+    document.querySelector("#record-player")?.focus();
+    return;
+  }
   if (name === "help")
     return modal(
       "使用指南",
