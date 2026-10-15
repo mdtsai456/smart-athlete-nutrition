@@ -5,3 +5,7 @@
 @import url("./responsive.css");
 
 @import url("./planner.css");
+
+/* 【表單錯誤定位】 */
+.field-error { color: #c62828; font-size: .875rem; margin: 4px 0 0; }
+.has-error   { border-color: #c62828 !important; }

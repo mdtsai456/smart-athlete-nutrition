@@ -30,6 +30,9 @@ import { MAX_ITEM_GRAMS, MEAL_TYPES } from "../services/meal.service.js";
 import { xlsxToRows } from "../utils/xlsx.js";
 import { addFood, deleteFood, importFoods } from "../services/food.service.js";
 import { updateMyProfile } from "../services/athlete.service.js";
+// 【修改3.表單錯誤定位】新增：欄位錯誤顯示與焦點定位
+import { validateForm, showFormErrors } from "../components/form-errors.js";
+
 import { releaseExtraCamera, startPlateCamera, stopPlateCamera } from "../pages/shared/camera.js";
 import { loadPage, today } from "../services/workspace.service.js";
 import { enterAccount } from "./auth.js";
@@ -563,6 +566,13 @@ function bindEvents() {
     event.preventDefault();
     const submit = formEl.querySelector('[type="submit"]');
     if (submit.disabled) return;
+    // 【修改3:表單錯誤定位】新增：個人資料先在前端檢查。
+    // 有錯誤就在欄位旁顯示原因、把焦點移到第一個錯誤欄位並中止送出。
+    // 這裡不呼叫 render()，表單不會重畫，所以已填內容會保留。
+    if (formEl.dataset.form === "my-profile") {
+      if (showFormErrors(formEl, validateForm(formEl))) return;
+    }
+
     submit.disabled = true;
     const submitter = event.submitter?.form === formEl ? event.submitter : null;
     const obj = Object.fromEntries(submitter ? new FormData(formEl, submitter) : new FormData(formEl));
@@ -690,6 +700,12 @@ function bindEvents() {
         } else await render();
         return;
       }
+      // 【修改3:表單錯誤定位】新增：service 丟出的錯誤若帶有 error.fields，顯示在對應欄位旁
+      if (error.fields && showFormErrors(formEl, error.fields)) {
+        submit.disabled = false;
+        return;
+      }
+
       formEl.querySelector(".form-error").textContent = error.message;
       submit.disabled = false;
     }
