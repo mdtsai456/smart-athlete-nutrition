@@ -85,7 +85,7 @@ function statusOf(row) {
   });
 }
 
-/** 各日使用當日計畫或有效的期間目標。達標日的熱量是 80%–115%，蛋白質至少 80%。 */
+/** 各日先看當日計畫。沒有當日計畫時，已排的訓練日或休息日使用對應範本。待確認不算目標。達標日的熱量是 80%–115%，蛋白質至少 80%。 */
 export function playerRange(player, records, dates) {
   const days = dates.map((date) => dayIntake(player, records, date));
   const recordedDays = days.filter((day) => day.hasRecord);

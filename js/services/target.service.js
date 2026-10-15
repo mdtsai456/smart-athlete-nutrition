@@ -3,8 +3,8 @@
  * 此模組不儲存資料。
  */
 const ENERGY_TOLERANCE = 5;
-// 營養師可以修改預設值，並儲存確認後的目標。
-const CARB_DAY_PRESETS = Object.freeze({ 訓練日: 6, 休息日: 4 });
+/** 訓練日與休息日的碳水起點。營養師儲存範本後可以改。 */
+export const CARB_DAY_PRESETS = Object.freeze({ 訓練日: 6, 休息日: 4 });
 export function changePlanDay(input, training) {
   if (!Object.hasOwn(CARB_DAY_PRESETS, training))
     throw new Error("請選擇訓練日或休息日。");
@@ -14,6 +14,23 @@ const round = (value) => Math.round((value + Number.EPSILON) * 10) / 10;
 export function shiftDate(iso, days) {
   const [year, month, day] = iso.split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
+/** 含指定日期的星期一到星期日。 */
+export function weekDates(iso) {
+  const [year, month, day] = iso.split("-").map(Number);
+  const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  const mondayOffset = weekday === 0 ? -6 : 1 - weekday;
+  const start = shiftDate(iso, mondayOffset);
+  return Array.from({ length: 7 }, (_, index) => shiftDate(start, index));
+}
+/** 沒有日別清單時回傳 null。有清單但該日未排，回傳 pending，不當成休息日。 */
+export function dayTypeOn(marks, athleteId, date) {
+  if (!Array.isArray(marks)) return null;
+  const row = marks.find(
+    (item) => item.athleteId === athleteId && item.localDate === date,
+  );
+  if (row?.dayType === "training" || row?.dayType === "rest") return row.dayType;
+  return "pending";
 }
 /** 取得指定球員與日期的最新計畫，不修改原始陣列。 */
 export function latestDailyPlan(plans, athleteId, date) {
@@ -31,15 +48,30 @@ function activeTargetRows(rows, athleteId, date) {
 }
 /**
  * 先使用當日計畫。
- * 沒有目標時顯示未設定。
- * 未設定不是 0。
+ * 已排的訓練日或休息日使用對應範本。待確認顯示未設定，不當成休息日或 0。
+ * 沒有日別清單時，沿用期間目標。
  * 每公斤目標需要體重。
  */
+const unsetTarget = () => ({
+  calories: null,
+  protein: null,
+  carbs: null,
+  fat: null,
+  source: "unset",
+});
 export function resolveTarget(player, rows, date, dailyPlan) {
   if (dailyPlan?.target) return { ...dailyPlan.target, source: "daily" };
+  const marked = dayTypeOn(player.dayMarks, player.id, date);
+  if (marked === "pending") return unsetTarget();
+  if (marked === "training" || marked === "rest") {
+    const template = (player.templates || []).find(
+      (row) => row.athleteId === player.id && row.trainingType === marked,
+    );
+    if (!template?.target) return unsetTarget();
+    return { ...template.target, source: "template" };
+  }
   const active = activeTargetRows(rows, player.id, date);
-  if (!active.length)
-    return { calories: null, protein: null, carbs: null, fat: null, source: "unset" };
+  if (!active.length) return unsetTarget();
   const weight = Number(player.weight);
   const byNutrient = Object.fromEntries(active.map((row) => [row.nutrientId, row]));
   const read = (nutrientId) => {

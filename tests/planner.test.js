@@ -10,9 +10,10 @@ import {
   confirmedPlan,
   planDraft,
   resolveTarget,
+  weekDates,
 } from "../js/services/target.service.js";
 import { signIn } from "../js/api/session.js";
-import { saveNutritionPlan } from "../js/api/plan.api.js";
+import { saveDayMarks, saveNutritionPlan, saveTargetTemplate } from "../js/api/plan.api.js";
 import { loadPage } from "../js/services/workspace.service.js";
 import { seed, today } from "../js/api/seed.js";
 const example = {
@@ -122,6 +123,34 @@ test("saving writes a daily plan and does not copy it onto other dates", async (
   assert.equal(draft.proteinKg, 1.6);
   assert.equal(draft.carbMinimum, 4);
   assert.equal(draft.training, "休息日");
+});
+
+/** 用 p4。p1 在上一則測試已有當日計畫，當日計畫會蓋過範本。 */
+test("a marked training day uses its template and a pending day stays unset", async () => {
+  await signIn("acct-n1");
+  await saveTargetTemplate("p4", "training", example, false);
+  await saveTargetTemplate("p4", "rest", {
+    ...example,
+    training: "休息日",
+    calories: 2400,
+    carbMinimum: 4,
+  }, false);
+  await saveDayMarks("p4", [
+    { localDate: today, dayType: "training" },
+    { localDate: "2026-11-17", dayType: "pending" },
+  ]);
+  const trained = (await loadPage(today)).players.find((item) => item.id === "p4");
+  assert.equal(trained.target.source, "template");
+  assert.equal(trained.target.calories, 2800);
+  assert.equal(trained.dailyPlan, null);
+  const pending = (await loadPage("2026-11-17")).players.find((item) => item.id === "p4");
+  assert.equal(pending.target.source, "unset");
+  assert.equal(pending.target.calories, null);
+  await saveTargetTemplate("p4", "training", { ...example, calories: 3000 }, false);
+  const updated = (await loadPage(today)).players.find((item) => item.id === "p4");
+  assert.equal(updated.target.calories, 3000);
+  assert.equal(updated.target.source, "template");
+  assert.equal(weekDates(today)[0], today);
 });
 
 test("overflowing calculations cannot produce an accepted target", () => {

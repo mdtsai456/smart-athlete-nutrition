@@ -1,5 +1,5 @@
 /**
- * 營養師編輯當日營養目標。
+ * 營養師編輯訓練日與休息日範本，並安排這一週的日別。
  */
 import { toast } from "../../components/toast.js";
 import { render, startPage } from "../../core/app-shell.js";
@@ -20,6 +20,10 @@ startPage({
       onPlayer: (id) => {
         state.targetPlayer = id;
         sessionStorage.setItem("targetPlayer", id);
+      },
+      onDate: (iso) => {
+        state.date = iso;
+        sessionStorage.setItem("viewDate", iso);
       },
       onSaved: render,
       notify: toast,

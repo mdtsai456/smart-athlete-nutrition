@@ -285,4 +285,6 @@ export const seed = {
   foodNutrients,
   nutritionTargets: [],
   ...meals,
+  targetTemplates: [],
+  dayMarks: [],
 };

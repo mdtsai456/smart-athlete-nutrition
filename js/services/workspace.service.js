@@ -5,7 +5,7 @@
  */
 import { accounts, athleteCoaches, coaches, nutritionists, organizations, players } from "../api/athlete.api.js";
 import { collection } from "../api/api.js";
-import { listDailyPlans } from "../api/plan.api.js";
+import { listDailyPlans, listDayMarks, listTargetTemplates } from "../api/plan.api.js";
 import { foodNutrients, foods } from "../api/food.api.js";
 import { nutritionTargets } from "../api/target.api.js";
 import { today } from "../api/seed.js";
@@ -52,6 +52,8 @@ async function tables() {
     analysisRows,
     imageRows,
     dailyPlanRows,
+    templateRows,
+    dayMarkRows,
   ] = await Promise.all([
     players.list(),
     organizations.list(),
@@ -69,6 +71,8 @@ async function tables() {
     collection("mealAnalyses").list(),
     collection("mealImages").list(),
     listDailyPlans(),
+    listTargetTemplates(),
+    listDayMarks(),
   ]);
   return {
     players: playerRows,
@@ -87,6 +91,8 @@ async function tables() {
     mealAnalyses: analysisRows,
     mealImages: imageRows,
     dailyPlans: dailyPlanRows,
+    targetTemplates: templateRows,
+    dayMarks: dayMarkRows,
   };
 }
 /** 依登入者權限與指定日期篩選球員。名單依背號由小到大，沒有背號的放最後。 */
@@ -111,29 +117,35 @@ export async function loadPage(date = today, accountId = null) {
       ...presentMeal(meal, data),
       player: players.find((player) => player.id === meal.athleteId),
     }));
-    const summaries = players.map((player) =>
-      playerSummary(
+    const summaries = players.map((player) => {
+      const profile = {
+        ...player,
+        nutritionTargets: data.nutritionTargets.filter(
+          (row) => row.athleteId === player.id,
+        ),
+        dailyPlans: data.dailyPlans.filter((row) => row.athleteId === player.id),
+        dailyPlan: latestDailyPlan(data.dailyPlans, player.id, date),
+        templates: data.targetTemplates.filter((row) => row.athleteId === player.id),
+        dayMarks: data.dayMarks.filter((row) => row.athleteId === player.id),
+        coachName:
+          activeCoaches(data.athleteCoaches, data.coaches, player.id, date).join("、") ||
+          "未指派",
+      };
+      return playerSummary(
         {
-          ...player,
-          nutritionTargets: data.nutritionTargets.filter(
-            (row) => row.athleteId === player.id,
-          ),
-          dailyPlans: data.dailyPlans.filter((row) => row.athleteId === player.id),
-          dailyPlan: latestDailyPlan(data.dailyPlans, player.id, date),
-          coachName:
-            activeCoaches(data.athleteCoaches, data.coaches, player.id, date).join("、") ||
-            "未指派",
+          ...profile,
+          // 目標要讀這位球員的日別與範本。原始球員物件還沒有這兩份資料。
           target: resolveTarget(
-            player,
+            profile,
             data.nutritionTargets,
             date,
-            latestDailyPlan(data.dailyPlans, player.id, date),
+            profile.dailyPlan,
           ),
         },
         records,
         date,
-      ),
-    );
+      );
+    });
     return {
       date,
       summary: {

@@ -569,3 +569,89 @@
     align-items: flex-start;
   }
 }
+.week-board {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+.week-day {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--border, #d5e0ea);
+  border-radius: 10px;
+  background: #fff;
+}
+.week-day.is-viewed {
+  border-color: #145b92;
+  background: #f3f8fd;
+}
+.week-day span,
+.week-day small {
+  color: var(--muted, #667c93);
+}
+.week-day select {
+  width: 100%;
+  min-height: 36px;
+}
+.week-day-pick {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.template-switch {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.template-switch button {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid #d5e0ea;
+  background: #fff;
+}
+.template-switch button[aria-selected="true"] {
+  background: #145b92;
+  color: #fff;
+  border-color: #145b92;
+}
+/* 這一週與「這一天」左右並排，兩張卡同高。球員資訊卡在這兩張卡上面。 */
+.targets-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(240px, 0.75fr);
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+.week-card {
+  height: 100%;
+}
+.week-card .week-board {
+  margin-top: 0;
+}
+.day-apply {
+  margin-top: 0;
+}
+.day-apply h2 {
+  margin: 0 0 4px;
+}
+.day-apply .data-row {
+  padding: 12px 0;
+}
+@media (max-width: 850px) {
+  .targets-top {
+    grid-template-columns: 1fr;
+  }
+  .week-board {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
