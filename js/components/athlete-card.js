@@ -8,36 +8,23 @@ import {
   athleteGoals,
   athleteSexes,
 } from "../services/athlete.service.js";
-export function athleteDetails(player, compact = false) {
-  const facts = athleteFacts(player);
-  const selected = compact
-    ? facts.filter(([label]) =>
-        [
-          "體重",
-          "運動項目",
-          "每週訓練",
-          "主要目標",
-          "飲食限制",
-          "過敏",
-          "備註",
-        ].includes(label),
-      )
-    : facts;
-  return `<dl class="athlete-facts">${selected.map(([label, value]) => `<div><dt>${label}</dt><dd>${esc(value)}</dd></div>`).join("")}</dl>`;
+export function athleteDetails(player) {
+  return `<dl class="athlete-facts">${athleteFacts(player).map(([label, value]) => `<div><dt>${label}</dt><dd>${esc(value)}</dd></div>`).join("")}</dl>`;
 }
 export function athleteForm(player = {}) {
+  const labelText = (label, required) => (required ? `${label}＊` : label);
   const field = (label, name, type = "text", extra = "", required = true) =>
-    `<label class="field">${label}<input name="${name}" type="${type}" value="${esc(player[name] ?? "")}" ${extra} ${required ? "required" : ""}></label>`;
+    `<label class="field">${labelText(label, required)}<input name="${name}" type="${type}" value="${esc(player[name] ?? "")}" ${extra} ${required ? "required" : ""}></label>`;
   const select = (label, name, options) =>
-    `<label class="field">${label}<select name="${name}" required><option value="">請選擇</option>${options.map((value) => `<option ${player[name] === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>`;
-  return `<input name="playerId" type="hidden" value="${esc(player.id || "")}"><div class="form-grid">${field("姓名或代號", "name")}${field("出生日期", "birthDate", "date")}${select("生理性別", "sex", athleteSexes)}${field("身高（cm）", "height", "number", 'min="50" max="260" step="0.1"')}${field("體重（kg）", "weight", "number", 'min="10" max="350" step="0.1"')}${field("體脂率（%・選填）", "bodyFat", "number", 'min="0.1" max="99.9" step="0.1"', false)}${field("運動項目", "sport")}${field("每週訓練次數", "weeklyTraining", "number", 'min="0" max="50" step="1"')}${select("主要目標", "goal", athleteGoals)}${field("背號（選填）", "number", "number", 'min="0" max="99"', false)}${field("位置（選填）", "position", "text", "", false)}</div>${[
+    `<label class="field">${labelText(label, true)}<select name="${name}" required><option value="">請選擇</option>${options.map((value) => `<option ${player[name] === value ? "selected" : ""}>${value}</option>`).join("")}</select></label>`;
+  return `<input name="playerId" type="hidden" value="${esc(player.id || "")}"><div class="form-grid">${field("姓名或代號", "name")}${field("出生日期", "birthDate", "date")}${select("生理性別", "sex", athleteSexes)}${field("身高（cm）", "height", "number", 'min="50" max="260" step="0.1"')}${field("體重（kg）", "weight", "number", 'min="10" max="350" step="0.1"')}${field("體脂率（%）", "bodyFat", "number", 'min="0.1" max="99.9" step="0.1"', false)}${field("運動項目", "sport")}${field("每週訓練次數", "weeklyTraining", "number", 'min="0" max="50" step="1"')}${select("主要目標", "goal", athleteGoals)}${field("背號", "number", "number", 'min="0" max="99"', false)}${field("位置", "position", "text", "", false)}</div>${[
     ["dietaryRestrictions", "飲食限制"],
     ["allergies", "過敏"],
     ["notes", "備註"],
   ]
     .map(
       ([key, label]) =>
-        `<label class="field">${label}<textarea name="${key}" rows="2" placeholder="無則填寫「無」，尚未確認可留白">${esc(player[key] || "")}</textarea></label>`,
+        `<label class="field">${labelText(label, false)}<textarea name="${key}" rows="2" placeholder="無則填寫「無」，尚未確認可留白">${esc(player[key] || "")}</textarea></label>`,
     )
     .join("")}`;
 }

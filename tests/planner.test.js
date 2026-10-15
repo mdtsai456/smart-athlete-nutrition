@@ -88,23 +88,36 @@ test("saving writes a daily plan and does not copy it onto other dates", async (
   await signIn("acct-n1");
   await saveNutritionPlan("p1", today, example);
   const data = await loadPage(today);
-  assert.equal(data.players[0].target.carbs, 430.5);
-  assert.equal(data.players[0].weight, 72);
-  assert.equal(data.players[0].dailyPlan.inputJson.weight, 70);
-  assert.equal(data.players[0].dailyPlan.inputJson.proteinKg, 1.6);
-  assert.equal(data.players[0].target.source, "daily");
-  assert.equal((await loadPage("2026-11-17")).players[0].target.calories, null);
-  assert.equal(data.players[1].target.source, "unset");
+  const player = data.players.find((item) => item.id === "p1");
+  assert.equal(player.target.carbs, 430.5);
+  assert.equal(player.weight, 72);
+  assert.equal(player.dailyPlan.inputJson.weight, 70);
+  assert.equal(player.dailyPlan.inputJson.proteinKg, 1.6);
+  assert.equal(player.target.source, "daily");
+  assert.equal(
+    (await loadPage("2026-11-17")).players.find((item) => item.id === "p1").target
+      .calories,
+    null,
+  );
+  assert.ok(
+    data.players
+      .filter((item) => item.id !== "p1")
+      .every((item) => item.target.source === "unset"),
+  );
   await saveNutritionPlan("p1", "2026-11-17", {
     ...example,
     training: "休息日",
     calories: 2400,
     carbMinimum: 4,
   });
-  assert.equal((await loadPage(today)).players[0].target.calories, 2800);
+  assert.equal(
+    (await loadPage(today)).players.find((item) => item.id === "p1").target.calories,
+    2800,
+  );
   const next = await loadPage("2026-11-17");
-  assert.equal(next.players[0].target.calories, 2400);
-  const draft = planDraft(next.players[0], "2026-11-17");
+  const nextPlayer = next.players.find((item) => item.id === "p1");
+  assert.equal(nextPlayer.target.calories, 2400);
+  const draft = planDraft(nextPlayer, "2026-11-17");
   assert.equal(draft.weight, 70);
   assert.equal(draft.proteinKg, 1.6);
   assert.equal(draft.carbMinimum, 4);

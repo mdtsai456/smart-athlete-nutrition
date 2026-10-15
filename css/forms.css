@@ -424,6 +424,9 @@ dialog .plate-camera {
   color: #647c96;
   font-size: 13px;
 }
+.athlete-facts > div {
+  min-width: 0;
+}
 .athlete-facts dd {
   margin: 5px 0 0;
   white-space: pre-wrap;
@@ -565,7 +568,7 @@ dialog .plate-camera {
   padding: 0 24px 20px;
 }
 
-/* 只降低背景圖片的透明度。文字保持原有透明度。 */
+/* 降低背景圖片的透明度。不降低文字的透明度。 */
 .meal-image-placeholder {
   position: relative;
   isolation: isolate;
@@ -612,8 +615,9 @@ dialog .plate-camera {
   .record-layout form[data-form="draft-add"] .btn { padding: 10px 8px; }
 }
 
-/* 紀錄列表與詳情共用預覽元件，只有範例背景淡化，實拍照片保持原樣。 */
-.meal-record-food { display: flex; align-items: center; gap: 12px; }
+/* 紀錄列表與詳情使用同一個預覽元件。範例背景降低透明度。實拍照片不改變透明度。 */
+.meal-record-food { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+.meal-record-food > span { min-width: 0; overflow-wrap: anywhere; }
 .meal-image-thumb,
 .record-photo.meal-image-thumb {
   width: 88px;

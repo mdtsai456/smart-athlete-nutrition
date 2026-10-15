@@ -36,7 +36,7 @@ export const MEAL_TYPES = Object.freeze([
 const MEAL_LABEL = Object.fromEntries(MEAL_TYPES);
 const MEAL_STATUS = { draft: "草稿", submitted: "已送出", reviewed: "已審核" };
 export const MAX_ITEM_GRAMS = 3000;
-export const ANALYSIS_STATUS = {
+const ANALYSIS_STATUS = {
   queued: "排隊中",
   running: "分析中",
   succeeded: "分析完成",

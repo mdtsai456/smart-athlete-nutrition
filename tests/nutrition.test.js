@@ -47,19 +47,16 @@ test("summary isolates player and date and counts distinct meals", () => {
 });
 test("record save updates player summary through service", async () => {
   await signIn("acct-p1");
-  const before = await loadPage();
+  const before = (await loadPage()).players.find((player) => player.id === "p1");
   await addRecord({
     playerId: "p1",
     date: today,
     meal: "晚餐",
     items: [{ foodId: "f1", grams: 100 }],
   });
-  const after = await loadPage();
-  assert.equal(
-    after.players[0].totals.calories,
-    before.players[0].totals.calories + 165,
-  );
-  assert.equal(after.players[0].completion, 100);
+  const after = (await loadPage()).players.find((player) => player.id === "p1");
+  assert.equal(after.totals.calories, before.totals.calories + 165);
+  assert.equal(after.completion, 100);
 });
 test("invalid quantities cannot become official records", async () => {
   await assert.rejects(() =>

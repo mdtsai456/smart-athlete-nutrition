@@ -8,7 +8,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { previewFoodImport } from "../js/utils/food-import.js";
-import { foodEmoji, matchFoodEmoji } from "../js/utils/food-emoji.js";
+import { foodEmoji, foodImageUrl, UNCATEGORIZED_EMOJI } from "../js/utils/food-emoji.js";
+import { view } from "../js/pages/shared/screens.js";
 import { rowsToXlsx, xlsxToRows } from "../js/utils/xlsx.js";
 import { signIn } from "../js/api/session.js";
 import { deleteFood, importFoods } from "../js/services/food.service.js";
@@ -87,28 +88,42 @@ test("confirm writes the ready row and leaves an existing name unchanged", async
   assert.match(again.failed[0].reasons[0], /資料庫已有同名菜色/);
   const finalFoods = (await loadPage()).foods.filter((food) => food.name === "清蒸魚");
   assert.equal(finalFoods.length, 1);
-  assert.equal(foodEmoji(finalFoods[0]), "🐟");
+  assert.equal(foodEmoji(finalFoods[0]), "🥩");
 });
 
-test("longer food words win and an explicit emoji stays", () => {
-  assert.equal(matchFoodEmoji("清炒花椰菜"), "🥦");
-  assert.equal(matchFoodEmoji("青江菜"), "🥬");
-  assert.equal(matchFoodEmoji("味噌湯"), "🍲");
-  assert.equal(matchFoodEmoji("香菇"), "🍄‍🟫");
-  assert.equal(matchFoodEmoji("雞肉"), "🍗");
-  assert.equal(matchFoodEmoji("沒有對到的點心"), "🥗");
-  assert.equal(foodEmoji({ name: "味噌湯", emoji: "🍕", emojiExplicit: true }), "🍕");
+test("each category uses one emoji and a readable image replaces it", () => {
+  assert.equal(foodEmoji({ name: "香煎雞胸肉", foodType: "蛋白質" }), "🥩");
+  assert.equal(foodEmoji({ name: "水煮蛋", category: "蛋白質" }), "🥩");
+  assert.equal(foodEmoji({ name: "糙米飯", category: "全穀雜糧" }), "🌾");
+  assert.equal(foodEmoji({ name: "清炒花椰菜", category: "蔬菜" }), "🥦");
+  assert.equal(foodEmoji({ name: "蘋果", category: "水果" }), "🍎");
+  assert.equal(foodEmoji({ name: "希臘優格", category: "乳品" }), "🥛");
+  assert.equal(foodEmoji({ name: "橄欖油", category: "油脂" }), "🫒");
+  assert.equal(foodEmoji({ name: "未命名", category: "未分類" }), UNCATEGORIZED_EMOJI);
+  assert.equal(foodEmoji({ name: "自訂分類", foodType: "點心" }), UNCATEGORIZED_EMOJI);
+  assert.equal(foodImageUrl({ objectKey: "foods/a.jpg" }), "");
+  assert.equal(foodImageUrl({ imageUrl: "foods/a.jpg" }), "");
+  assert.equal(foodImageUrl({ imageUrl: "https://example.com/yogurt.jpg" }), "https://example.com/yogurt.jpg");
+  const html = view("foods", {
+    foods: [
+      { id: "a", name: "希臘優格", category: "乳品", calories: 97, protein: 9, carbs: 3.6, fat: 5 },
+      { id: "b", name: "希臘優格照片", category: "乳品", calories: 97, protein: 9, carbs: 3.6, fat: 5, imageUrl: "https://example.com/yogurt.jpg" },
+    ],
+  }, "nutritionist");
+  assert.match(html, /🥛/);
+  assert.match(html, /src="https:\/\/example.com\/yogurt.jpg"/);
 });
 
-test("an emoji column overrides the name and a word in that column is rejected", async () => {
+test("an emoji column is listed and not written", async () => {
   const rows = [
     ["菜色名稱", "熱量", "圖示"],
     ["味噌湯", 37, "🍕"],
     ["青江菜", 20, "青菜"],
   ];
   const preview = previewFoodImport(await xlsxToRows(await rowsToXlsx(rows)));
-  assert.equal(preview.ready[0].emoji, "🍕");
-  assert.match(preview.rejected[0].reasons.join("；"), /圖示請填一個圖/);
+  assert.deepEqual(preview.ignoredColumns, ["圖示"]);
+  assert.equal(preview.rejected.length, 0);
+  assert.deepEqual(preview.ready.map((row) => row.name), ["味噌湯", "青江菜"]);
 });
 
 test("delete removes an unused food and keeps a food used by a meal", async () => {

@@ -1,55 +1,26 @@
 /**
- * 依菜名選圖。
- * 先比對較長的詞。
+ * 同一分類使用同一個圖示。
+ * 沒有對應分類時使用未分類圖示。
+ * imageUrl 是可讀的圖片網址時，畫面使用該圖片。
  */
-const FOOD_EMOJI = [
-  ["花椰菜", "🥦"],
-  ["高麗菜", "🥬"],
-  ["紅蘿蔔", "🥕"],
-  ["胡蘿蔔", "🥕"],
-  ["馬鈴薯", "🥔"],
-  ["青菜", "🥬"],
-  ["番茄", "🍅"],
-  ["蕃茄", "🍅"],
-  ["地瓜", "🍠"],
-  ["燕麥", "🥣"],
-  ["優格", "🥛"],
-  ["起司", "🧀"],
-  ["乳酪", "🧀"],
-  ["豆腐", "🫘"],
-  ["香蕉", "🍌"],
-  ["蘋果", "🍎"],
-  ["玉米", "🌽"],
-  ["土豆", "🥔"],
-  ["堅果", "🥜"],
-  ["沙拉", "🥗"],
-  ["麵包", "🍞"],
-  ["鮭", "🐟"],
-  ["雞", "🍗"],
-  ["飯", "🍚"],
-  ["蛋", "🥚"],
-  ["魚", "🐟"],
-  ["湯", "🍲"],
-  ["菜", "🥬"],
-  ["菇", "🍄‍🟫"],
-  ["豬", "🥩"],
-  ["牛", "🥩"],
-  ["肉", "🥩"],
-  ["蝦", "🦐"],
-  ["麵", "🍜"],
-  ["粥", "🥣"],
-  ["奶", "🥛"],
-  ["豆", "🫘"],
+export const FOOD_CATEGORIES = [
+  ["蛋白質", "🥩"],
+  ["全穀雜糧", "🌾"],
+  ["蔬菜", "🥦"],
+  ["水果", "🍎"],
+  ["乳品", "🥛"],
+  ["油脂", "🫒"],
 ];
-const RULES = FOOD_EMOJI.toSorted((a, b) => b[0].length - a[0].length);
-
-export function matchFoodEmoji(name) {
-  const text = String(name ?? "");
-  const hit = RULES.find(([word]) => text.includes(word));
-  return hit ? hit[1] : "🥗";
-}
+const CATEGORY_EMOJI = Object.fromEntries(FOOD_CATEGORIES);
+export const UNCATEGORIZED_EMOJI = "🍽️";
+const IMAGE_URL = /^(https?:\/\/|blob:|data:image\/(?:png|jpeg|webp);base64,|\/(?!\/))/i;
 
 export function foodEmoji(food) {
-  if (food?.emojiExplicit && food.emoji) return food.emoji;
-  return matchFoodEmoji(food?.name);
+  const category = food?.category || food?.foodType || "";
+  return CATEGORY_EMOJI[category] || UNCATEGORIZED_EMOJI;
+}
+
+export function foodImageUrl(food) {
+  const url = typeof food?.imageUrl === "string" ? food.imageUrl.trim() : "";
+  return IMAGE_URL.test(url) ? url : "";
 }

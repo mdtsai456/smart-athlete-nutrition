@@ -9,7 +9,7 @@ import { view } from "../shared/screens.js";
 startPage({
   role: "nutritionist",
   route: "targets",
-  render: (pageState) => view("targets", pageState.data, "nutritionist", pageState.filter, pageState),
+  render: (pageState) => view("targets", pageState.data, "nutritionist", pageState),
   mount() {
     const root = document.querySelector("#targets-root");
     if (!root) return;

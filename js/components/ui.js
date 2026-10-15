@@ -43,15 +43,21 @@ export const progress = (value, tone = "green") =>
   `<span class="progress"><span class="${tone}" style="width:${Math.min(100, Math.max(0, value))}%"></span></span>`;
 export const empty = (text = "目前沒有資料") =>
   `<div class="empty">${icon("menu")}<h3>${text}</h3><p>新增資料後，就會顯示在這裡。</p></div>`;
-export function percent(value) {
-  return value == null ? "未設定" : `${value}%`;
-}
+/** 畫面用的營養數字。加上千分位。小數沿用原值，最多四位。 */
 export function shown(value) {
-  if (value == null || !Number.isFinite(Number(value))) return "未設定";
-  return Number(value).toLocaleString("zh-TW");
+  if (value == null || value === "" || !Number.isFinite(Number(value))) return "未設定";
+  return Number(value).toLocaleString("zh-TW", {
+    maximumFractionDigits: 4,
+    minimumFractionDigits: 0,
+  });
+}
+export function percent(value) {
+  return value == null || value === "" || !Number.isFinite(Number(value))
+    ? "未設定"
+    : `${shown(value)}%`;
 }
 export const button = (label, action, primary = false) =>
   `<button type="button" class="btn ${primary ? "primary" : ""}" data-action="${action}">${label}</button>`;
 export function playerTable(players, editable = false) {
-  return `<div class="table-wrap"><table><thead><tr><th>球員</th><th>位置</th><th>三餐記錄率</th><th>熱量達成率</th><th>蛋白質攝取</th><th>營養狀態</th><th></th></tr></thead><tbody>${players.map((p) => `<tr><td><div class="person">${avatar(p)}<div><strong>${esc(p.name)}</strong><small>#${p.number} · 男子籃球隊</small></div></div></td><td>${p.position}</td><td><div class="meter">${progress(p.completion)}<span>${p.completion}%</span></div></td><td><strong>${percent(p.rate)}</strong><small>${shown(p.totals.calories)} / ${shown(p.target?.calories)} kcal</small></td><td><strong>${shown(p.totals.protein)}</strong><span class="muted"> / ${shown(p.target?.protein)} g</span></td><td>${badge(p.status, p.tone)}</td><td><button class="icon-btn" data-action="${editable ? "target" : "detail"}" data-id="${p.id}" aria-label="查看 ${esc(p.name)}">${icon("chevron")}</button></td></tr>`).join("")}</tbody></table></div>`;
+  return `<div class="table-wrap"><table><thead><tr><th>球員</th><th>位置</th><th>三餐記錄率</th><th>熱量達成率</th><th>蛋白質攝取</th><th>營養狀態</th><th></th></tr></thead><tbody>${players.map((p) => `<tr><td><div class="person">${avatar(p)}<div><strong>${esc(p.name)}</strong><small>#${p.number} · 男子籃球隊</small></div></div></td><td>${p.position}</td><td><div class="meter">${progress(p.completion)}<span>${percent(p.completion)}</span></div></td><td><strong>${percent(p.rate)}</strong><small>${shown(p.totals.calories)} / ${shown(p.target?.calories)} kcal</small></td><td><strong>${shown(p.totals.protein)}</strong><span class="muted"> / ${shown(p.target?.protein)} g</span></td><td>${badge(p.status, p.tone)}</td><td><button class="icon-btn" data-action="${editable ? "target" : "detail"}" data-id="${p.id}" aria-label="查看 ${esc(p.name)}">${icon("chevron")}</button></td></tr>`).join("")}</tbody></table></div>`;
 }

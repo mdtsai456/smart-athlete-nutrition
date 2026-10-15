@@ -21,7 +21,6 @@ const HEADER_FIELDS = [
   ["protein", ["蛋白質", "protein", "prot"]],
   ["carbohydrate", ["碳水", "碳水化合物", "carbs", "carbohydrate", "cho"]],
   ["fat", ["脂肪", "fat"]],
-  ["emoji", ["圖示", "emoji", "圖"]],
 ];
 function cellText(value) {
   return String(value ?? "").trim();
@@ -31,13 +30,6 @@ function headerKey(value) {
 }
 export function blankResult(fileError) {
   return { fileError, ignoredColumns: [], ready: [], rejected: [] };
-}
-function parseEmoji(value) {
-  const text = cellText(value);
-  if (!text) return { empty: true };
-  if ([...text].length > 4 || /[\p{Letter}\p{Number}]/u.test(text))
-    return { error: "圖示請填一個圖" };
-  return { value: text };
 }
 function parseAmount(value) {
   if (value == null || cellText(value) === "") return { empty: true };
@@ -119,12 +111,6 @@ export function previewFoodImport(rows, existingNames = []) {
     }
     if (!Object.keys(amounts).length && nutrientErrors === 0)
       reasons.push("至少要有一項營養數字");
-    let emoji = "";
-    if (mapped.columns.emoji != null) {
-      const parsed = parseEmoji(row[mapped.columns.emoji]);
-      if (parsed.error) reasons.push(parsed.error);
-      else if (!parsed.empty) emoji = parsed.value;
-    }
     if (name && !reasons.length) {
       if (seen.has(name)) reasons.push("這份檔案裡已有同名菜色");
       else if (existing.has(name)) reasons.push("資料庫已有同名菜色");
@@ -138,7 +124,6 @@ export function previewFoodImport(rows, existingNames = []) {
       source,
       sourceFoodCode,
       density,
-      emoji,
       amounts,
       reasons,
     };

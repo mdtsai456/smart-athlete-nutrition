@@ -7,5 +7,5 @@ import { view } from "../shared/screens.js";
 startPage({
   role: "coach",
   route: "records",
-  render: (pageState) => view("records", pageState.data, "coach", pageState.filter, pageState),
+  render: (pageState) => view("records", pageState.data, "coach", pageState),
 });

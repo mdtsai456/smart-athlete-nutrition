@@ -6,12 +6,12 @@
  */
 export const today = "2026-11-16";
 const FOOD_ROWS = [
-  ["f1", "香煎雞胸肉", "蛋白質", "🍗", 165, 31, 0, 3.6],
-  ["f2", "糙米飯", "全穀雜糧", "🍚", 111, 2.6, 23, 0.9],
-  ["f3", "清炒花椰菜", "蔬菜", "🥦", 45, 3.7, 5, 1.5],
-  ["f4", "水煮蛋", "蛋白質", "🥚", 155, 13, 1.1, 11],
-  ["f5", "烤鮭魚", "蛋白質", "🐟", 208, 20, 0, 13],
-  ["f6", "烤地瓜", "全穀雜糧", "🍠", 115, 1.3, 27, 0.2],
+  ["f1", "香煎雞胸肉", "蛋白質", 165, 31, 0, 3.6],
+  ["f2", "糙米飯", "全穀雜糧", 111, 2.6, 23, 0.9],
+  ["f3", "清炒花椰菜", "蔬菜", 45, 3.7, 5, 1.5],
+  ["f4", "水煮蛋", "蛋白質", 155, 13, 1.1, 11],
+  ["f5", "烤鮭魚", "蛋白質", 208, 20, 0, 13],
+  ["f6", "烤地瓜", "全穀雜糧", 115, 1.3, 27, 0.2],
 ];
 export const nutrients = [
   { id: "energy", nutrientCode: "ENERC", name: "熱量", unit: "kcal", status: "active" },
@@ -25,8 +25,8 @@ function snapshotAmount(per100g, grams) {
 function buildCatalog() {
   const foods = [];
   const foodNutrients = [];
-  for (const [id, name, foodType, emoji, energy, protein, carbohydrate, fat] of FOOD_ROWS) {
-    foods.push({ id, name, foodType, emoji, status: "active" });
+  for (const [id, name, foodType, energy, protein, carbohydrate, fat] of FOOD_ROWS) {
+    foods.push({ id, name, foodType, status: "active" });
     for (const [nutrientId, amountPer100g] of [
       ["energy", energy],
       ["protein", protein],
@@ -43,7 +43,7 @@ function buildCatalog() {
   }
   return { foods, foodNutrients };
 }
-/** 示範餐的營養資料在建立時就算好，不跟著之後的食物表變。 */
+/** 示範餐在建立時寫入營養資料。之後修改食物表不改變這些資料。 */
 function buildMeals(foodNutrients) {
   const mealRecords = [];
   const mealItems = [];

@@ -44,7 +44,6 @@ export async function importFoods(rows) {
         source: row.source || null,
         sourceFoodCode: row.sourceFoodCode || null,
         density: row.density,
-        ...(row.emoji ? { emoji: row.emoji, emojiExplicit: true } : {}),
         status: "active",
       });
       for (const [nutrientId, amountPer100g] of Object.entries(row.amounts)) {

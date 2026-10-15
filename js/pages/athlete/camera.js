@@ -8,7 +8,7 @@ import { view } from "../shared/screens.js";
 startPage({
   role: "player",
   route: "camera",
-  render: (pageState) => view("camera", pageState.data, "player", pageState.filter, pageState),
+  render: (pageState) => view("camera", pageState.data, "player", pageState),
   mount() {
     startPlateCamera();
   },

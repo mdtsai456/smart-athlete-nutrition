@@ -7,5 +7,5 @@ import { view } from "../shared/screens.js";
 startPage({
   role: "nutritionist",
   route: "analysis",
-  render: (pageState) => view("analysis", pageState.data, "nutritionist", pageState.filter, pageState),
+  render: (pageState) => view("analysis", pageState.data, "nutritionist", pageState),
 });

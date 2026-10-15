@@ -8,7 +8,7 @@ import { header, pageHeader } from "../components/header.js";
 import { closeDialog as closeModal, modal } from "../components/modal.js";
 import { allowed, sidebar } from "../components/sidebar.js";
 import { toast } from "../components/toast.js";
-import { badge, button, esc, icon, shown } from "../components/ui.js";
+import { badge, button, esc, icon, percent, shown } from "../components/ui.js";
 import {
   addMealItem,
   attachMealImage,
@@ -24,6 +24,7 @@ import {
   reviewMeal,
   submitMeal,
 } from "../api/meal.api.js";
+import { FOOD_CATEGORIES } from "../utils/food-emoji.js";
 import { NUTRIENT_LABEL, blankResult, previewFoodImport } from "../utils/food-import.js";
 import { MAX_ITEM_GRAMS, MEAL_TYPES } from "../services/meal.service.js";
 import { xlsxToRows } from "../utils/xlsx.js";
@@ -112,7 +113,10 @@ const form = (type, body, submit = "儲存") =>
   `<form data-form="${type}">${body}<div class="form-error" role="alert"></div><div class="modal-footer">${button("取消", "close")}<button class="btn primary" type="submit">${submit}</button></div></form>`;
 function nutrientText(amounts) {
   return Object.entries(amounts)
-    .map(([id, value]) => `${NUTRIENT_LABEL[id]} ${value}`)
+    .map(
+      ([id, value]) =>
+        `${NUTRIENT_LABEL[id]} ${shown(value)} ${id === "energy" ? "kcal" : "g"}`,
+    )
     .join("、");
 }
 function foodImportTable(title, rows, errorColumn) {
@@ -198,7 +202,7 @@ async function openCorrection(mealId) {
 <input name="mealId" type="hidden" value="${esc(mealId)}">
 <input name="itemId" type="hidden" value="${esc(item.id)}">
 <input name="expectedRevision" type="hidden" value="${esc(view.revision)}">
-<p><strong>${esc(item.name)}</strong> · ${esc(item.confirmationLabel)} · ${item.grams ?? "—"} g</p>
+<p><strong>${esc(item.name)}</strong> · ${esc(item.confirmationLabel)} · ${item.grams == null ? "—" : shown(item.grams)} g</p>
 <label class="field">食物<select name="foodId">${foodOptions(item.foodId)}</select></label>
 <label class="field">重量（g）<input name="weightG" type="number" min="0.1" max="${MAX_ITEM_GRAMS}" step="0.1" value="${esc(item.grams ?? "")}" required></label>
 <label class="field">修正原因<textarea name="reason" rows="2" required placeholder="請寫明這項要改什麼"></textarea></label>
@@ -209,7 +213,7 @@ async function openCorrection(mealId) {
     .join("");
   modal(
     `${esc(player?.name || "餐點")} · 修正${esc(view.meal)}`,
-    `<div class="correction"><p>這筆餐已送出。改食物、份量、拒絕或刪除都要寫原因，改完再審核。拒絕與刪除的項目不計入攝取。</p>${view.reason ? `<p>重新開啟原因：${esc(view.reason)}</p>` : ""}${itemForms}<form data-form="correct-add"><input name="mealId" type="hidden" value="${esc(mealId)}"><input name="expectedRevision" type="hidden" value="${esc(view.revision)}"><h3>新增一項</h3><label class="field">食物<select name="foodId">${foodOptions("")}</select></label><label class="field">重量（g）<input name="weightG" type="number" min="0.1" max="${MAX_ITEM_GRAMS}" step="0.1" required></label><label class="field">修正原因<textarea name="reason" rows="2" required placeholder="請寫明為什麼要加這項"></textarea></label><div class="actions"><button class="btn primary" type="submit">新增並確認</button></div><div class="form-error" role="alert"></div></form><div class="notice">本餐熱量 ${view.nutrition.calories} kcal · 蛋白質 ${view.nutrition.protein}g · 碳水 ${view.nutrition.carbs}g · 脂肪 ${view.nutrition.fat}g</div><div class="actions"><button type="button" class="btn primary" data-action="review-meal" data-id="${esc(mealId)}">審核通過</button></div></div>`,
+    `<div class="correction"><p>這筆餐已送出。改食物、份量、拒絕或刪除都要寫原因，改完再審核。拒絕與刪除的項目不計入攝取。</p>${view.reason ? `<p>重新開啟原因：${esc(view.reason)}</p>` : ""}${itemForms}<form data-form="correct-add"><input name="mealId" type="hidden" value="${esc(mealId)}"><input name="expectedRevision" type="hidden" value="${esc(view.revision)}"><h3>新增一項</h3><label class="field">食物<select name="foodId">${foodOptions("")}</select></label><label class="field">重量（g）<input name="weightG" type="number" min="0.1" max="${MAX_ITEM_GRAMS}" step="0.1" required></label><label class="field">修正原因<textarea name="reason" rows="2" required placeholder="請寫明為什麼要加這項"></textarea></label><div class="actions"><button class="btn primary" type="submit">新增並確認</button></div><div class="form-error" role="alert"></div></form><div class="notice">本餐熱量 ${shown(view.nutrition.calories)} kcal · 蛋白質 ${shown(view.nutrition.protein)} g · 碳水 ${shown(view.nutrition.carbs)} g · 脂肪 ${shown(view.nutrition.fat)} g</div><div class="actions"><button type="button" class="btn primary" data-action="review-meal" data-id="${esc(mealId)}">審核通過</button></div></div>`,
     true,
   );
 }
@@ -276,7 +280,7 @@ async function renderRecord() {
         item.confirmationStatus === "pending"
           ? `<span class="item-actions">${choose}<button type="button" class="btn" data-action="confirm-item" data-id="${esc(item.id)}">確認</button><button type="button" class="btn" data-action="reject-item" data-id="${esc(item.id)}">拒絕</button></span>`
           : "";
-      return `<div class="data-row"><div><strong>${esc(item.name)}</strong><small>${esc(item.confirmationLabel)} · ${hint}${item.grams ?? "—"} g</small></div>${actions}</div>`;
+      return `<div class="data-row"><div><strong>${esc(item.name)}</strong><small>${esc(item.confirmationLabel)} · ${hint}${item.grams == null ? "—" : shown(item.grams)} g</small></div>${actions}</div>`;
     })
     .join("");
   const analysisNote =
@@ -290,7 +294,7 @@ async function renderRecord() {
       : "";
   modal(
     "確認餐點與營養份量",
-    `<div class="record-layout"><section><h3>餐盤影像</h3>${mealImage(view.image)}<p class="footnote">${esc(recordDraft.stage)} · ${esc(view.analysis?.statusLabel || "尚無分析")}</p></section><section><h3>餐點確認結果</h3>${mealPicker(selected, "record-form")}<div class="actions record-meal-actions">${view.items.some((item) => item.confirmationStatus === "pending" && item.foodId) ? button("全部確認", "confirm-all") : ""}${button("重新拍攝", "retake")}</div><p class="muted">待確認項目還不計入攝取。確認後才計入這一餐。送出時把這一版固定下來，不會另外重建項目。</p>${analysisNote ? `<p class="analysis-error">${esc(analysisNote)}</p>` : ""}<div id="record-items">${items}</div>${manualAdd}<form id="record-form" data-form="record"><div id="nutrition-preview" class="nutrition-preview" aria-live="polite"><div><strong>${nutrition.calories}</strong><span>kcal 已確認熱量</span></div><div><strong>${nutrition.protein}g</strong><span>蛋白質</span></div><div><strong>${nutrition.carbs}g</strong><span>碳水化合物</span></div><div><strong>${nutrition.fat}g</strong><span>脂肪</span></div></div><div class="form-error" role="alert"></div><div class="modal-footer">${button("取消", "close")}<button type="submit" class="btn primary" ${view.canSubmit ? "" : "disabled"}>${icon("check")} 送出餐點</button></div></form></section></div>`,
+    `<div class="record-layout"><section><h3>餐盤影像</h3>${mealImage(view.image)}<p class="footnote">${esc(recordDraft.stage)} · ${esc(view.analysis?.statusLabel || "尚無分析")}</p></section><section><h3>餐點確認結果</h3>${mealPicker(selected, "record-form")}<div class="actions record-meal-actions">${view.items.some((item) => item.confirmationStatus === "pending" && item.foodId) ? button("全部確認", "confirm-all") : ""}${button("重新拍攝", "retake")}</div><p class="muted">待確認項目還不計入攝取。確認後才計入這一餐。送出時把這一版固定下來，不會另外重建項目。</p>${analysisNote ? `<p class="analysis-error">${esc(analysisNote)}</p>` : ""}<div id="record-items">${items}</div>${manualAdd}<form id="record-form" data-form="record"><div id="nutrition-preview" class="nutrition-preview" aria-live="polite"><div><strong>${shown(nutrition.calories)}</strong><span>kcal 已確認熱量</span></div><div><strong>${shown(nutrition.protein)} g</strong><span>蛋白質</span></div><div><strong>${shown(nutrition.carbs)} g</strong><span>碳水化合物</span></div><div><strong>${shown(nutrition.fat)} g</strong><span>脂肪</span></div></div><div class="form-error" role="alert"></div><div class="modal-footer">${button("取消", "close")}<button type="submit" class="btn primary" ${view.canSubmit ? "" : "disabled"}>${icon("check")} 送出餐點</button></div></form></section></div>`,
     true,
   );
   document.querySelector("#dialog").classList.add("record-dialog");
@@ -312,7 +316,7 @@ async function action(name, id) {
           .filter((player) => player.tone === "orange")
           .map(
             (player) =>
-              `<p>${badge("待關注", "orange")} <strong>${esc(player.name)}</strong> 今日熱量達成 ${player.rate}%，請確認飲食紀錄。</p>`,
+              `<p>${badge("待關注", "orange")} <strong>${esc(player.name)}</strong> 今日熱量達成 ${percent(player.rate)}，請確認飲食紀錄。</p>`,
           )
           .join("") || "<p>今天沒有待關注提醒。</p>"
       }</div>`,
@@ -339,7 +343,7 @@ async function action(name, id) {
       "新增菜色",
       form(
         "food",
-        `${input("菜色名稱", "name")}${select("菜色分類", "category", ["蛋白質", "全穀雜糧", "蔬菜", "水果", "乳品", "油脂"].map((item) => `<option>${item}</option>`).join(""))}<p class="notice">食物主檔只存名稱與分類。下面的數字會存成每 100 g 的營養素列。</p><div class="form-grid">${[
+        `${input("菜色名稱", "name")}${select("菜色分類", "category", FOOD_CATEGORIES.map(([item]) => `<option>${item}</option>`).join(""))}<p class="notice">食物主檔只存名稱與分類。下面的數字會存成每 100 g 的營養素列。</p><div class="form-grid">${[
           ["calories", "熱量（kcal）"],
           ["protein", "蛋白質（g）"],
           ["carbs", "碳水（g）"],
@@ -450,7 +454,7 @@ async function action(name, id) {
     const record = state.data.records.find((item) => item.id === id);
     return modal(
       `${esc(record.player.name)} · ${record.meal}`,
-      `<div class="guide"><p>${record.date} ${record.time} · ${esc(record.statusLabel)}${record.analysis ? " · " + esc(record.analysis.statusLabel) : ""}</p>${record.reason ? `<p>重新開啟原因：${esc(record.reason)}</p>` : ""}${mealImage(record.image)}<p class="footnote">${record.image?.url ? "餐盤影像" : "範例預覽 · 實拍影像網址由後端提供"}</p>${record.items.map((item) => `<p>${esc(item.name)} <strong>${item.grams ?? "—"} g</strong> · ${esc(item.confirmationLabel)}</p>`).join("")}<div class="notice">熱量 ${record.nutrition.calories} kcal · 蛋白質 ${record.nutrition.protein}g · 碳水 ${record.nutrition.carbs}g · 脂肪 ${record.nutrition.fat}g</div>${state.role === "nutritionist" && record.status === "submitted" ? `<div class="actions"><button type="button" class="btn" data-action="correct-meal" data-id="${record.id}">修正餐點</button><button type="button" class="btn primary" data-action="review-meal" data-id="${record.id}">審核通過</button></div>` : ""}${state.role === "nutritionist" && record.status === "reviewed" ? `<div class="actions"><button type="button" class="btn" data-action="reopen-meal" data-id="${record.id}">重新開啟</button></div>` : ""}</div>`,
+      `<div class="guide"><p>${record.date} ${record.time} · ${esc(record.statusLabel)}${record.analysis ? " · " + esc(record.analysis.statusLabel) : ""}</p>${record.reason ? `<p>重新開啟原因：${esc(record.reason)}</p>` : ""}${mealImage(record.image)}<p class="footnote">${record.image?.url ? "餐盤影像" : "範例預覽 · 實拍影像網址由後端提供"}</p>${record.items.map((item) => `<p>${esc(item.name)} <strong>${item.grams == null ? "—" : shown(item.grams)} g</strong> · ${esc(item.confirmationLabel)}</p>`).join("")}<div class="notice">熱量 ${shown(record.nutrition.calories)} kcal · 蛋白質 ${shown(record.nutrition.protein)} g · 碳水 ${shown(record.nutrition.carbs)} g · 脂肪 ${shown(record.nutrition.fat)} g</div>${state.role === "nutritionist" && record.status === "submitted" ? `<div class="actions"><button type="button" class="btn" data-action="correct-meal" data-id="${record.id}">修正餐點</button><button type="button" class="btn primary" data-action="review-meal" data-id="${record.id}">審核通過</button></div>` : ""}${state.role === "nutritionist" && record.status === "reviewed" ? `<div class="actions"><button type="button" class="btn" data-action="reopen-meal" data-id="${record.id}">重新開啟</button></div>` : ""}</div>`,
     );
   }
   if (name === "correct-meal" && state.role === "nutritionist") return openCorrection(id);
@@ -501,7 +505,7 @@ function bindEvents() {
       if (target.id === "record-player") state.recordPlayer = target.value;
       else state.recordMeals = [...document.querySelectorAll('input[name="record-meal"]:checked')].map((el) => el.value);
       paintPage();
-      // 重繪後保留鍵盤焦點，方便連續勾選餐別。
+      // 重繪後保留鍵盤焦點。
       const controls = document.querySelectorAll('#record-player, input[name="record-meal"]');
       [...controls].find((el) => el.id === target.id && el.value === target.value)?.focus();
     }
@@ -706,7 +710,7 @@ export async function startPage(page) {
     location.replace("/login/index.html");
     return;
   }
-  // 登入頁允許已有 session 的使用者停留，供標題連結返回及切換帳號。
+  // 已登入使用者可以留在登入頁。此頁提供返回連結與切換帳號。
   if (session && page.role && session.uiRole !== page.role && state.route !== "kiosk") {
     location.replace(pageUrl(session.uiRole, homeRoute(session.uiRole)));
     return;

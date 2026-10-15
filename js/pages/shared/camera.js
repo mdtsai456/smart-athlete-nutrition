@@ -1,7 +1,7 @@
 /**
  * 食物攝影機入口。
- * 顯示即時畫面與餐盤框。不保存圖片。
- * 開始記錄的按鈕在 app-shell.js。
+ * 顯示即時畫面與餐盤框。
+ * 不保存圖片。
  */
 import { button } from "../../components/ui.js";
 

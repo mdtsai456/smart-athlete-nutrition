@@ -4,7 +4,7 @@
  */
 import { esc, icon } from "./ui.js";
 export function mealImage(image, { compact = false } = {}) {
-  // objectKey 是儲存識別碼，不能直接作為影像網址。後端須提供可讀取的 url。
+  // objectKey 是儲存識別碼。objectKey 不是影像網址。後端提供可讀取的 url。
   const url = typeof image?.url === "string" ? image.url.trim() : "";
   if (url && /^(https?:\/\/|blob:|data:image\/(?:png|jpeg|webp);base64,|\/(?!\/))/i.test(url))
     return `<img class="record-photo${compact ? " meal-image-thumb" : ""}" src="${esc(url)}" alt="實際拍攝的餐盤影像">`;

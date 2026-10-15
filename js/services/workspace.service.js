@@ -18,6 +18,21 @@ function average(values) {
   if (!numbers.length) return null;
   return Math.round(numbers.reduce((sum, value) => sum + value, 0) / numbers.length);
 }
+// 背號轉成數字。空白或無法轉換的視為沒有背號。
+function jerseyNumber(player) {
+  if (player.number === "" || player.number == null) return null;
+  const value = Number(player.number);
+  return Number.isFinite(value) ? value : null;
+}
+// 排序比較。有背號的由小到大，沒有背號的放最後。
+function byJerseyNumber(left, right) {
+  const a = jerseyNumber(left);
+  const b = jerseyNumber(right);
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  return a - b;
+}
 export { today };
 async function tables() {
   const [
@@ -74,7 +89,7 @@ async function tables() {
     dailyPlans: dailyPlanRows,
   };
 }
-/** 依登入者權限與指定日期篩選球員。回傳資料包含菜色、餐點與當日目標。 */
+/** 依登入者權限與指定日期篩選球員。名單依背號由小到大，沒有背號的放最後。 */
 export async function loadPage(date = today, accountId = null) {
     const data = await tables();
     const directory = presentAccounts(
@@ -86,7 +101,9 @@ export async function loadPage(date = today, accountId = null) {
     );
     const account = accountId ? directory.find((item) => item.id === accountId) : null;
     const visible = new Set(visibleAthleteIds(account, data, date));
-    const players = data.players.filter((player) => visible.has(player.id));
+    const players = data.players
+      .filter((player) => visible.has(player.id))
+      .sort(byJerseyNumber);
     const foods = data.foods.map((food) => presentFood(food, data.foodNutrients));
     const records = data.mealRecords
       .filter((meal) => visible.has(meal.athleteId))

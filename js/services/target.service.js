@@ -2,9 +2,9 @@
  * 計算訓練日與休息日的蛋白質、脂肪、剩餘碳水與熱量。
  * 此模組不儲存資料。
  */
-export const ENERGY_TOLERANCE = 5;
+const ENERGY_TOLERANCE = 5;
 // 營養師可以修改預設值，並儲存確認後的目標。
-export const CARB_DAY_PRESETS = Object.freeze({ 訓練日: 6, 休息日: 4 });
+const CARB_DAY_PRESETS = Object.freeze({ 訓練日: 6, 休息日: 4 });
 export function changePlanDay(input, training) {
   if (!Object.hasOwn(CARB_DAY_PRESETS, training))
     throw new Error("請選擇訓練日或休息日。");
@@ -21,7 +21,7 @@ export function latestDailyPlan(plans, athleteId, date) {
     row.athleteId === athleteId && row.localDate === date &&
     (!latest || row.revision > latest.revision) ? row : latest, null);
 }
-export function activeTargetRows(rows, athleteId, date) {
+function activeTargetRows(rows, athleteId, date) {
   return (rows || []).filter(
     (row) =>
       row.athleteId === athleteId &&
@@ -29,7 +29,12 @@ export function activeTargetRows(rows, athleteId, date) {
       (row.endDate == null || row.endDate >= date),
   );
 }
-/** 優先使用當日計畫。沒有目標時，顯示未設定。不要將未設定的目標視為 0。計算每公斤目標時需要體重。 */
+/**
+ * 先使用當日計畫。
+ * 沒有目標時顯示未設定。
+ * 未設定不是 0。
+ * 每公斤目標需要體重。
+ */
 export function resolveTarget(player, rows, date, dailyPlan) {
   if (dailyPlan?.target) return { ...dailyPlan.target, source: "daily" };
   const active = activeTargetRows(rows, player.id, date);

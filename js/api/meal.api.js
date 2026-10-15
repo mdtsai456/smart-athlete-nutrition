@@ -1,6 +1,6 @@
 /**
  * 餐點命令。
- * 建立草稿、修改、第一次送出。畫面不逐表新增或刪除。
+ * 建立草稿、修改、第一次送出。頁面不對各資料表分別新增或刪除。
  * 操作者只來自登入 session。教練不能修改餐點。
  */
 import { config, request } from "./api.js";
@@ -22,6 +22,7 @@ import {
   completeMealAnalysis,
   startMealAnalysis,
   previewCatalog,
+  MEAL_TYPES,
 } from "../services/meal.service.js";
 
 const ACTIONS = new Set([
@@ -37,14 +38,14 @@ const ACTIONS = new Set([
   "reopen",
 ]);
 
-/** 營養師是 nutritionist。球員是 player 加自己的編號。 */
+/** 營養師的操作者是 nutritionist。球員的操作者是 player 與球員編號。 */
 function actorFromSession(session) {
   if (session.role === "nutritionist") return "nutritionist";
   if (session.role === "athlete") return `player:${session.athleteId}`;
   throw new Error("教練不能修改餐點");
 }
 
-// Mock 也限制球員只能修改自己的餐點。正式 API 必須在後端執行相同驗證。
+// Mock 限制球員只能修改自己的餐點。正式 API 在後端做相同檢查。
 function assertOwnMeal(session, athleteId) {
   if (session.role === "athlete" && session.athleteId !== athleteId)
     throw new Error("只能修改自己的餐點");
@@ -116,7 +117,7 @@ export async function mutateMeal(mealId, body) {
   }
 }
 
-/** 第一次送出。送出後再改走 mutateMeal，不再走這裡。 */
+/** 第一次送出。送出後的修改呼叫 mutateMeal。 */
 export async function saveMeal(mealId, body) {
   if (config.mode !== "mock")
     return request(`/meals/${mealId}/submit`, {
@@ -137,7 +138,7 @@ export async function readMeal(mealId) {
   if (config.mode !== "mock") return request(`/meals/${mealId}`);
   return engineMealView(mealId);
 }
-/** 明確執行一次模擬分析。正式模式不得呼叫本機模擬流程。 */
+/** 執行一次模擬分析。正式模式不呼叫本機模擬。 */
 export async function finishMealAnalysis(mealId, outcome) {
   if (config.mode !== "mock") throw new Error("正式模式不支援模擬辨識");
   const session = await assertMockWrite();
@@ -150,7 +151,7 @@ export async function finishMealAnalysis(mealId, outcome) {
   return engineMealView(mealId);
 }
 
-/** 下面是固定動作的簡寫，仍走建立、修改或送出。 */
+/** 這些函式呼叫 createMeal、mutateMeal 或 saveMeal。 */
 export { createMeal as openDraftMeal };
 export const attachMealImage = (mealId, expectedRevision) =>
   mutateMeal(mealId, { action: "add_image", expectedRevision, payload: {} });
@@ -165,7 +166,7 @@ export const reopenMeal = (mealId, reason, expectedRevision) =>
 export const reviewMeal = (mealId, expectedRevision) =>
   mutateMeal(mealId, { action: "review", expectedRevision, payload: {} });
 
-/** 呼叫端提供餐點與項目 ID，不額外查詢項目資料表。 */
+/** 使用呼叫端提供的餐點 ID 與項目 ID。不查詢項目資料表。 */
 export async function confirmMealItem(mealId, itemId, patch = {}, expectedRevision) {
   return mutateMeal(mealId, {
     action: "confirm",
@@ -191,13 +192,7 @@ export async function deleteMealItem(mealId, itemId, expectedRevision, reason) {
 }
 /** 依序建立餐點、確認每個項目，然後送出。 */
 export async function addRecord(data) {
-  const mealType =
-    {
-      早餐: "breakfast",
-      午餐: "lunch",
-      晚餐: "dinner",
-      點心: "snack",
-    }[data.meal] || data.mealType;
+  const mealType = MEAL_TYPES.find(([, label]) => label === data.meal)?.[0] || data.mealType;
   await previewCatalog(data.items);
   const meal = await createMeal({
     athleteId: data.playerId,

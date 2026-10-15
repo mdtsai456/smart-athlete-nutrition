@@ -81,7 +81,6 @@ function trendOf(recordedDays) {
 }
 
 function statusOf(row) {
-  if (!row.recordedMeals || row.completeness < 60) return ["紀錄不足", "orange"];
   if ([row.calorieRate, row.proteinRate, row.carbRate, row.fatRate].some((value) => value == null))
     return ["未設定", "neutral"];
   if (row.calorieRate > 115) return ["熱量偏高", "orange"];

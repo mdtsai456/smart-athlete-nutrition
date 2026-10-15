@@ -1,6 +1,6 @@
 /**
  * 每日營養計畫命令。
- * 期間一段日期內的營養目標 與 球員本人的基本資料不使用餐點命令。
+ * 期間營養目標與球員基本資料不使用餐點命令。
  */
 import { collection, config, request } from "./api.js";
 import { assertMockWrite, csrfHeader } from "./session.js";

@@ -70,11 +70,11 @@ for (const role of ['nutritionist', 'coach']) {
         id: `${player.id}-${i}`, playerId: player.id, player, meal, items: [{ id: 'item' }],
       }))),
     };
-    const html = view('records', data, role, '', { recordPlayer: 'p2', recordMeals: ['早餐', '晚餐'] });
+    const html = view('records', data, role, { recordPlayer: 'p2', recordMeals: ['早餐', '晚餐'] });
     assert.match(html, /data-id="p2-0"/);
     assert.match(html, /data-id="p2-2"/);
     assert.doesNotMatch(html, /data-id="p2-1"|data-id="p1-/);
     assert.match(view('records', data, role), /共 6 筆/);
-    assert.match(view('records', data, role, '', { recordPlayer: 'missing' }), /沒有符合篩選條件/);
+    assert.match(view('records', data, role, { recordPlayer: 'missing' }), /沒有符合篩選條件/);
   });
 }

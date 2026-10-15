@@ -3,7 +3,7 @@
  * 選擇球員、編輯草稿，並顯示驗算結果。
  */
 import { athleteSummary } from "../../components/athlete-card.js";
-import { esc } from "../../components/ui.js";
+import { esc, shown } from "../../components/ui.js";
 import { saveNutritionPlan } from "../../api/plan.api.js";
 import {
   planDraft,
@@ -21,18 +21,18 @@ function resultView(result) {
   if (!result.target)
     return `<div class="plan-alert error" role="alert">${result.errors.map(esc).join("<br>")}</div>`;
   const t = result.target;
-  return `<div class="plan-total"><span>每日熱量目標</span><strong>${t.calories.toLocaleString()} <small>kcal</small></strong></div><div class="macro-results">${[
+  return `<div class="plan-total"><span>每日熱量目標</span><strong>${shown(t.calories)} <small>kcal</small></strong></div><div class="macro-results">${[
     ["protein", "蛋白質", result.proteinEnergy],
     ["fat", "脂肪", result.fatEnergy],
     ["carbs", "碳水化合物", result.carbsEnergy],
   ]
     .map(
       ([key, label, energy]) =>
-        `<div class="macro-result ${key}"><span>${label}</span><strong>${t[key]} <small>g</small></strong><small>${energy} kcal</small></div>`,
+        `<div class="macro-result ${key}"><span>${label}</span><strong>${shown(t[key])} <small>g</small></strong><small>${shown(energy)} kcal</small></div>`,
     )
     .join(
       "",
-    )}</div><div class="carb-check"><span>碳水 / 體重</span><strong>${result.carbRate} <small>g/kg</small></strong></div><div class="day-carb-summary"><strong>${esc(result.training)} · 碳水需求 ${result.carbMinimum} g/kg</strong><p>最低需求 ${result.carbRequired} g ／ 目前分配 ${t.carbs} g</p><span class="${result.carbShortfall > 0.1 ? "warn" : "good"}">${result.carbShortfall > 0.1 ? `尚差 ${result.carbShortfall} g 碳水` : "已達當日碳水需求"}</span></div><div class="energy-check"><strong>熱量驗算</strong><p>${t.protein} × 4 ＋ ${t.carbs} × 4 ＋ ${t.fat} × 9</p><span>= ${result.energy} kcal</span><small class="${Math.abs(result.difference) > 5 ? "warn" : "good"}">與目標差 ${result.difference > 0 ? "+" : ""}${result.difference} kcal · 容許四捨五入差 ±5 kcal</small></div>${result.errors.map((message) => `<div class="plan-alert error" role="alert">${esc(message)}</div>`).join("")}${result.warnings.map((message) => `<div class="plan-alert warning">${esc(message)}</div>`).join("")}${!result.warnings.length && result.valid ? '<div class="plan-alert okay">符合已設定的碳水需求與脂肪底線。</div>' : ""}`;
+    )}</div><div class="carb-check"><span>碳水 / 體重</span><strong>${shown(result.carbRate)} <small>g/kg</small></strong></div><div class="day-carb-summary"><strong>${esc(result.training)} · 碳水需求 ${shown(result.carbMinimum)} g/kg</strong><p>最低需求 ${shown(result.carbRequired)} g ／ 目前分配 ${shown(t.carbs)} g</p><span class="${result.carbShortfall > 0.1 ? "warn" : "good"}">${result.carbShortfall > 0.1 ? `尚差 ${shown(result.carbShortfall)} g 碳水` : "已達當日碳水需求"}</span></div><div class="energy-check"><strong>熱量驗算</strong><p>${shown(t.protein)} × 4 ＋ ${shown(t.carbs)} × 4 ＋ ${shown(t.fat)} × 9</p><span>= ${shown(result.energy)} kcal</span><small class="${Math.abs(result.difference) > 5 ? "warn" : "good"}">與目標差 ${result.difference > 0 ? "+" : ""}${shown(result.difference)} kcal · 容許四捨五入差 ±5 kcal</small></div>${result.errors.map((message) => `<div class="plan-alert error" role="alert">${esc(message)}</div>`).join("")}${result.warnings.map((message) => `<div class="plan-alert warning">${esc(message)}</div>`).join("")}${!result.warnings.length && result.valid ? '<div class="plan-alert okay">符合已設定的碳水需求與脂肪底線。</div>' : ""}`;
 }
 /** 修改分配條件後，切換至自動模式並重新計算。有提醒時，必須勾選確認才能儲存。 */
 export function mountTargets(

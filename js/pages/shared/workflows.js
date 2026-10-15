@@ -20,7 +20,7 @@ export function coachDashboard(data, selectedPlayerId = "p1") {
     ["今日已記錄", recordedPlayers, "位", "menu", "今天已有飲食紀錄", "green"],
     [
       "平均熱量達成率",
-      averageRate == null ? "未設定" : averageRate,
+      averageRate == null ? "未設定" : shown(averageRate),
       averageRate == null ? "" : "%",
       "fire",
       "依今日實際飲食紀錄計算",
@@ -55,15 +55,6 @@ export function coachDashboard(data, selectedPlayerId = "p1") {
       "",
     )}</div><div><h3>球員實際記錄</h3>${daily.meals.map((meal) => `<div class="data-row ${meal.recorded ? "" : "warn"}">${meal.meal}：${esc(meal.actual || "尚未記錄")}</div>`).join("")}</div></div></section>`;
 }
-function formatAmount(value) {
-  const rounded = Math.round((Number(value) || 0) * 10) / 10;
-  return Number.isInteger(rounded)
-    ? rounded.toLocaleString("zh-TW")
-    : rounded.toLocaleString("zh-TW", {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-      });
-}
 function nutritionStandard(player) {
   const items = [
     ["calories", "熱量", "kcal"],
@@ -76,14 +67,14 @@ function nutritionStandard(player) {
       const target = player.target?.[key];
       const recorded = player.totals[key];
       if (target == null)
-        return `<article class="standard-pie"><strong>${label}</strong><p>指定 未設定</p><p>已記錄 ${formatAmount(recorded)} ${unit}</p></article>`;
+        return `<article class="standard-pie"><strong>${label}</strong><p>指定 未設定</p><p>已記錄 ${shown(recorded)} ${unit}</p></article>`;
       const fill =
         target > 0 ? Math.max(0, Math.min(100, (recorded / target) * 100)) : 0;
       const gapText =
         recorded > target
-          ? `已超出 ${formatAmount(recorded - target)} ${unit}`
-          : `還差 ${formatAmount(Math.max(0, target - recorded))} ${unit}`;
-      return `<article class="standard-pie"><div class="macro-pie" style="--fill:${fill}%" role="img" aria-label="${label}已記錄 ${Math.round(fill)}%"></div><strong>${label}</strong><p>指定 ${formatAmount(target)} ${unit}</p><p>已記錄 ${formatAmount(recorded)} ${unit}</p><p class="gap">${gapText}</p></article>`;
+          ? `已超出 ${shown(recorded - target)} ${unit}`
+          : `還差 ${shown(Math.max(0, target - recorded))} ${unit}`;
+      return `<article class="standard-pie"><div class="macro-pie" style="--fill:${fill}%" role="img" aria-label="${label}已記錄 ${percent(Math.round(fill))}"></div><strong>${label}</strong><p>指定 ${shown(target)} ${unit}</p><p>已記錄 ${shown(recorded)} ${unit}</p><p class="gap">${gapText}</p></article>`;
     })
     .join("")}</div><p class="standard-limit">飲食限制：${esc(player.dietaryRestrictions || "未填寫")}</p></section>`;
 }

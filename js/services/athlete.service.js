@@ -1,6 +1,6 @@
 /**
  * 運動員欄位規則。
- * 營養師編輯與球員自填使用相同白名單。
+ * 營養師編輯與球員自填使用相同的允許欄位。
  * 表單不能改 id 或營養計畫。
  */
 import { accounts, players } from "../api/athlete.api.js";

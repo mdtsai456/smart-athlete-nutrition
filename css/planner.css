@@ -449,12 +449,17 @@
   font-size: 12px;
   color: #728298;
   max-width: 100%;
-  overflow-wrap: anywhere;
+  min-width: 0;
+  flex: 1 1 16em;
 }
 .athlete-notice strong {
   white-space: nowrap;
   font-weight: 600;
   color: #4e647d;
+}
+.athlete-notice > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .notice-dot {
   width: 6px;
@@ -480,7 +485,9 @@
   margin-left: auto;
   font-size: 12px;
   color: #728298;
+  min-width: 0;
   max-width: 100%;
+  flex: 1 1 16em;
 }
 .athlete-note summary {
   cursor: pointer;
@@ -493,7 +500,7 @@
   margin-left: 10px;
 }
 .athlete-note p {
-  max-width: 420px;
+  max-width: 100%;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   line-height: 1.7;

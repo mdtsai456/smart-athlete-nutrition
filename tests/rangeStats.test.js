@@ -51,7 +51,7 @@ test("rates ignore empty days and a hit day needs calories and protein", () => {
   assert.equal(row.proteinRate, 100);
   assert.equal(row.hitDays, 1);
   assert.equal(row.completeness, 50);
-  assert.equal(row.status, "紀錄不足");
+  assert.equal(row.status, "進度良好");
 });
 
 test("high calories and low carbs are labeled after the record is complete enough", () => {
@@ -88,7 +88,8 @@ test("team averages skip players who recorded nothing", () => {
   );
   assert.equal(summary.calorieRate, 100);
   assert.equal(summary.completePlayers, 1);
-  assert.equal(summary.attentionPlayers, 1);
+  assert.equal(summary.rows.find((row) => row.player.id === "p2").status, "未設定");
+  assert.equal(summary.attentionPlayers, 0);
 });
 
 function emptyNutrition() {
@@ -124,7 +125,7 @@ test("records without items do not count as recorded days", () => {
   assert.equal(row.hitDays, 0);
 });
 
-// 缺少歷史目標時，不得套用目前目標，也不得稀釋其他日期的達成率。
+// 缺少該日目標時，不使用目前目標。該日不計入達成率。
 test("days without a target are excluded from average rates", () => {
   const row = playerRange({ ...player, nutritionTargets: [], dailyPlans: [
     { athleteId: 'p1', localDate: '2026-11-16', revision: 1, target: onTarget },

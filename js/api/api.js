@@ -1,7 +1,7 @@
 /**
  * HTTP 與 Mock 共用 request。
  * 模擬資料存在瀏覽器。UI 不呼叫 fetch。
- * 正式連線只改這裡與 Service。
+ * 正式連線只改這個模組與 Service。
  */
 import { seed } from "./seed.js";
 export const config = { mode: "mock", baseURL: "/api/v1" };

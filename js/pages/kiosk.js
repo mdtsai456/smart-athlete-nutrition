@@ -6,5 +6,5 @@ import { startPage } from "../core/app-shell.js";
 import { view } from "./shared/screens.js";
 startPage({
   route: "kiosk",
-  render: (pageState) => view("kiosk", pageState.data, pageState.role, pageState.filter, pageState),
+  render: (pageState) => view("kiosk", pageState.data, pageState.role, pageState),
 });
