@@ -6,7 +6,6 @@
 import { accounts, players } from "../api/athlete.api.js";
 export const athleteSexes = ["男", "女", "其他", "不願透露"];
 export const athleteGoals = ["維持", "增肌", "減脂", "比賽準備"];
-// 【表單錯誤定位】新增：丟出帶 fields 的錯誤。message 給底部摘要，fields（欄位名→原因）給欄位旁顯示
 const fail = (message, fields) => Object.assign(new Error(message), { fields });
 export function athleteProfile(data) {
   const profile = Object.fromEntries(
@@ -23,7 +22,6 @@ export function athleteProfile(data) {
     ].map((key) => [key, String(data[key] ?? "").trim()]),
   );
   if (!profile.name || !profile.sport)
-    // 【表單錯誤定位】修改：改用 fail()，指出是姓名還是運動項目
     throw fail("請填寫姓名或代號及運動項目", {
       ...(!profile.name && { name: "請輸入姓名或代號" }),
       ...(!profile.sport && { sport: "請輸入運動項目" }),
@@ -35,7 +33,6 @@ export function athleteProfile(data) {
     date.toISOString().slice(0, 10) !== profile.birthDate ||
     date > new Date()
   )
-    // 【表單錯誤定位】修改：改用 fail()
     throw fail("請填寫有效且非未來的出生日期", {
       birthDate: "請填寫有效且不晚於今天的出生日期",
     });
@@ -43,7 +40,6 @@ export function athleteProfile(data) {
     !athleteSexes.includes(profile.sex) ||
     !athleteGoals.includes(profile.goal)
   )
-    // 【表單錯誤定位】修改：改用 fail()，分別指出性別或目標
     throw fail("請選擇生理性別及主要目標", {
       ...(!athleteSexes.includes(profile.sex) && { sex: "請選擇生理性別" }),
       ...(!athleteGoals.includes(profile.goal) && { goal: "請選擇主要目標" }),
@@ -62,7 +58,6 @@ export function athleteProfile(data) {
       value > max ||
       (key === "weeklyTraining" && !Number.isInteger(value))
     )
-      // 【表單錯誤定位】修改：改用 fail()，用 [key] 指出是身高、體重或每週訓練次數
       throw fail("請檢查身高、體重及每週訓練次數", {
         [key]:
           key === "weeklyTraining"
@@ -81,7 +76,6 @@ export function athleteProfile(data) {
       profile.bodyFat <= 0 ||
       profile.bodyFat >= 100)
   )
-    // 【表單錯誤定位】修改：改用 fail()
     throw fail("體脂率須介於 0 與 100% 之間，或留白", {
       bodyFat: "體脂率須介於 0 與 100% 之間，或留白",
     });
@@ -95,7 +89,6 @@ export function athleteProfile(data) {
       profile.number < 0 ||
       profile.number > 99)
   )
-    // 【表單錯誤定位】修改：改用 fail()
     throw fail("背號須為 0–99，或留白", {
       number: "背號須為 0–99 的整數，或留白",
     });

@@ -12,18 +12,18 @@ const labels = {
   camera: ["食物攝影機", "辨識餐盤食物，自動計算每餐營養。"],
   targets: ["每日營養目標", "只寫入檢視日的每日計畫。沒有當日計畫時，達標改看期間政策；缺項顯示未設定。"],
   records: ["飲食紀錄", "記錄每一餐，看見持續累積的進步。"],
-  analysis: ["營養分析", "依時間區段看達成率，再對照當日的球員表現。"],
+  analysis: ["營養分析", "依時間區段看達成率與熱量長條圖。"],
   kiosk: ["營養餐秤站", "請放上餐盤並選擇您的名字"],
 };
 export function pageHeader(route, role, player) {
   let [title, sub] = labels[route] || labels.dashboard;
   if (role === "player" && route === "dashboard") {
     title = "球員首頁";
-    sub = `${player?.name || "球員"} · 今天的營養目標與飲食進度`;
+    sub = `${player?.name || "球員"} · 營養目標與飲食進度`;
   }
   if (role === "coach" && route === "dashboard") {
     title = "球員飲食監督";
-    sub = "教練查看飲食紀錄與營養目標達成率。";
+    sub = "看今天誰還沒記錄，以及一位球員實際吃了什麼。";
   }
   return `<div class="page-heading"><div><h1>${title}</h1><p>${esc(sub)}</p></div><div class="heading-actions"><span class="role-tag">${roles[role] || ""}</span>${role === "player" && route === "dashboard" ? button(icon("plus") + " 記錄飲食", "record", true) : ""}</div></div>`;
 }

@@ -30,7 +30,6 @@ import { MAX_ITEM_GRAMS, MEAL_TYPES } from "../services/meal.service.js";
 import { xlsxToRows } from "../utils/xlsx.js";
 import { addFood, deleteFood, importFoods } from "../services/food.service.js";
 import { updateMyProfile } from "../services/athlete.service.js";
-// 【修改3.表單錯誤定位】新增：欄位錯誤顯示與焦點定位
 import { validateForm, showFormErrors } from "../components/form-errors.js";
 
 import { releaseExtraCamera, startPlateCamera, stopPlateCamera } from "../pages/shared/camera.js";
@@ -45,9 +44,8 @@ let kioskTimer = null;
 let recordDraft = null;
 let foodImport = null;
 const app = () => document.querySelector("#app");
-// 【新增 2. 篩選條件保存】飲食紀錄的球員與餐別篩選存在 sessionStorage。
-// 各頁是獨立 HTML，切換頁面會整頁重新載入，記憶體中的 state 會消失，所以要另外存。
-// 存入時一併記下帳號 id（owner）；帳號不同就視為切換帳號，不沿用舊篩選。
+// 各頁是獨立 HTML，重新載入後記憶體中的 state 會消失，所以篩選另外存。
+// 一起記下帳號 id。帳號不同就不沿用舊篩選。
 const RECORD_FILTER_KEY = "recordFilters";
 let recordFilterOwner = null;
 const EMPTY_RECORD_FILTERS = { player: "", meals: [] };
@@ -132,7 +130,6 @@ async function render() {
     }
     if (data.account && !data.players.some((player) => player.id === state.comparisonPlayer))
       state.comparisonPlayer = data.players[0]?.id || "";
-    // 【新增 2. 篩選條件保存】保存的球員若不在目前可看的名單（例如教練的指派期間改變），改回「全部球員」。
     if (state.recordPlayer && !(data.players || []).some((p) => p.id === state.recordPlayer)) {
       state.recordPlayer = "";
       saveRecordFilters();
@@ -562,7 +559,7 @@ function bindEvents() {
       const target = event.target;
       if (target.id === "record-player") state.recordPlayer = target.value;
       else state.recordMeals = [...document.querySelectorAll('input[name="record-meal"]:checked')].map((el) => el.value);
-      saveRecordFilters(); // 【新增 2. 篩選條件保存】每次變更都保存。
+      saveRecordFilters();
       paintPage();
       // 重繪後保留鍵盤焦點。
       const controls = document.querySelectorAll('#record-player, input[name="record-meal"]');
@@ -622,9 +619,7 @@ function bindEvents() {
     event.preventDefault();
     const submit = formEl.querySelector('[type="submit"]');
     if (submit.disabled) return;
-    // 【修改3:表單錯誤定位】新增：個人資料先在前端檢查。
-    // 有錯誤就在欄位旁顯示原因、把焦點移到第一個錯誤欄位並中止送出。
-    // 這裡不呼叫 render()，表單不會重畫，所以已填內容會保留。
+    // 有錯誤就停在欄位旁，不重畫表單，已填內容會留著。
     if (formEl.dataset.form === "my-profile") {
       if (showFormErrors(formEl, validateForm(formEl))) return;
     }
@@ -756,7 +751,6 @@ function bindEvents() {
         } else await render();
         return;
       }
-      // 【修改3:表單錯誤定位】新增：service 丟出的錯誤若帶有 error.fields，顯示在對應欄位旁
       if (error.fields && showFormErrors(formEl, error.fields)) {
         submit.disabled = false;
         return;
@@ -788,7 +782,6 @@ export async function startPage(page) {
     return;
   }
   state.role = session?.uiRole || page.role || "nutritionist";
-  // 【新增 2. 篩選條件保存】還原保存的篩選；帳號不同或未登入時會清除（見 loadRecordFilters）。
   recordFilterOwner = session?.id || null;
   const savedFilters = loadRecordFilters(recordFilterOwner);
   state.recordPlayer = savedFilters.player;

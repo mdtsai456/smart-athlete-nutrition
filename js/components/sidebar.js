@@ -18,7 +18,7 @@ export function allowed(role) {
     if (id === "profile") return role === "player";
     if (role === "nutritionist") return !["camera", "dashboard"].includes(id);
     if (role === "coach") return !["foods", "targets", "camera"].includes(id);
-    return ["dashboard", "camera", "records", "analysis"].includes(id);
+    return ["dashboard", "camera", "records"].includes(id);
   });
 }
 const roleLabels = {
@@ -26,7 +26,6 @@ const roleLabels = {
     dashboard: "球員首頁",
     camera: "食物攝影機",
     records: "我的飲食紀錄",
-    analysis: "個人營養狀況",
   },
   coach: { dashboard: "球員飲食監督" },
   nutritionist: { targets: "每日營養目標" },

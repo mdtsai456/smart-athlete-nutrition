@@ -1,11 +1,7 @@
 /**
- * 【表單錯誤定位】新增檔案：放到 js/components/form-errors.js
- * 表單錯誤定位。
- * - 在欄位旁顯示原因，不重新渲染表單，所以已填內容保留
- * - 焦點移到畫面上第一個錯誤欄位
- * - 使用者修改該欄位後，錯誤自動消失
- * - 驗證規則直接讀欄位上的 required / min / max / step / pattern，
- *   不需要在這裡重複寫欄位名稱
+ * 表單錯誤顯示在欄位旁，不重畫表單。
+ * 焦點移到畫面上第一個錯誤欄位。
+ * 規則讀欄位上的 required、min、max、step、pattern。
  */
 
 const fieldLabel = (el) => {
@@ -34,7 +30,6 @@ function messageFor(el) {
   return el.validationMessage || `${label}有誤`;
 }
 
-/** 回傳 { 欄位名: 錯誤訊息 }，空物件代表通過。 */
 export function validateForm(form) {
   const errors = {};
   for (const el of form.elements) {
@@ -51,7 +46,7 @@ export function validateForm(form) {
   return errors;
 }
 
-export function clearFormErrors(form) {
+function clearFormErrors(form) {
   form.querySelectorAll(".field-error").forEach((n) => n.remove());
   form.querySelectorAll("[aria-invalid]").forEach(clearMarks);
   const summary = form.querySelector(".form-error");
@@ -64,11 +59,6 @@ function clearMarks(el) {
   el.classList.remove("has-error");
 }
 
-/**
- * @param {HTMLFormElement} form
- * @param {Record<string,string>} errors
- * @returns {boolean} 有錯誤（並已把焦點移過去）
- */
 export function showFormErrors(form, errors) {
   clearFormErrors(form);
   const targets = [];

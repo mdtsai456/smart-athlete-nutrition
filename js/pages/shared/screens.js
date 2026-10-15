@@ -47,7 +47,7 @@ export function view(route, d, role, state = {}) {
   const filter = state.filter || "";
   if (route === "dashboard" && role === "coach")
     return coachDashboard(d, state.comparisonPlayer);
-  if (route === "dashboard" && role === "player") return playerDashboard(d);
+  if (route === "dashboard" && role === "player") return playerDashboard(d, state);
   if (route === "profile" && role === "player") return profileView(d);
   if (route === "targets") return '<div id="targets-root"></div>';
   if (route === "foods")
@@ -66,11 +66,8 @@ export function view(route, d, role, state = {}) {
     const canFilter = role === "nutritionist" || role === "coach";
     const playerFilter = canFilter ? state.recordPlayer || "" : "";
     const mealFilters = canFilter ? state.recordMeals || [] : [];
-    // 【新增 1. 篩選重設與無資料提示】是否有套用球員或餐別篩選，
-    // 用來決定要不要顯示「清除篩選」按鈕。
     const hasFilter = Boolean(playerFilter || mealFilters.length);
-    // 【新增 1. 篩選重設與無資料提示】先取出「所選日期的全部紀錄」（尚未套用球員與餐別篩選）。
-    // 原本日期與篩選寫在同一個 filter，無法分辨「當日本來就沒紀錄」與「被篩選掉」。
+    // 先留這一天的全部紀錄，才能分辨「當天沒紀錄」和「被篩選掉」。
     const dayRecords = d.records.filter(
       (r) =>
         (r.status !== "draft" || r.reason) &&
@@ -79,15 +76,10 @@ export function view(route, d, role, state = {}) {
         r.date === d.date,
     );
     
-    // 紀錄須同時符合日期、球員及餐別條件。多選餐別時，符合其中一項即可。
-    // 【修改】改為從 dayRecords 再套用球員與餐別篩選，其餘條件不變。
+    // 多選餐別時，符合其中一項即可。
     const records = dayRecords
       .filter(
         (r) =>
-        //   (r.status !== "draft" || r.reason) &&
-        //   mealHasItems(r) &&
-        //   (role !== "player" || r.playerId === (d.athleteId || "p1")) &&
-        //   r.date === d.date &&
           (!playerFilter || r.playerId === playerFilter) &&
           (!mealFilters.length || mealFilters.includes(r.meal)),
       )
@@ -105,14 +97,8 @@ export function view(route, d, role, state = {}) {
           : "已審核的餐點可重新開啟後再修正。較晚的紀錄在上面。"
         : "較晚的紀錄在上面。";
         
-   // 【新增 1. 篩選重設與無資料提示】「清除篩選」按鈕。
-    // 點擊後由 app-shell.js 的 action("clear-record-filters") 重設球員與餐別，日期不變。
     const clearBtn = `<button type="button" class="btn" data-action="clear-record-filters">清除篩選</button>`;
     const filters = canFilter ? `<div class="record-filters"><label class="record-player-filter" for="record-player">球員<select id="record-player"><option value="">全部球員</option>${(d.players || []).map((p) => `<option value="${esc(p.id)}" ${p.id === playerFilter ? "selected" : ""}>${esc(p.name)}${p.number != null ? ` #${esc(p.number)}` : ""}</option>`).join("")}</select></label><fieldset class="record-meal-filters"><legend>餐別（可複選，未勾選時顯示全部）</legend>${MEAL_TYPES.map(([, label]) => `<label><input type="checkbox" name="record-meal" value="${esc(label)}" ${mealFilters.includes(label) ? "checked" : ""}>${label}</label>`).join("")}</fieldset><span class="muted" role="status">共 ${records.length} 筆</span>${hasFilter ? clearBtn : ""}</div>` : "";
-    // 【修改】篩選列在有套用篩選時，於筆數後面顯示「清除篩選」。
-    // 【新增 1. 篩選重設與無資料提示】依目前狀況區分兩種無資料提示：
-    // 1. 當日完全沒有紀錄 → 「這一天還沒有飲食紀錄」
-    // 2. 當日有紀錄但篩選後沒有結果 → 「沒有符合篩選條件…」並附清除按鈕
     const emptyState = !dayRecords.length
       ? empty("這一天還沒有飲食紀錄")
       : empty("沒有符合篩選條件的飲食紀錄，請調整球員或餐別。") +

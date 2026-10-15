@@ -1,3 +1,4 @@
+/* 1150、850、520 三個寬度，以及減少動效。 */
 @media (max-width: 1150px) {
   main {
     padding: 28px 24px 45px;
@@ -22,6 +23,9 @@
   }
 }
 @media (max-width: 850px) {
+  .range-top {
+    grid-template-columns: 1fr;
+  }
   .topbar {
     position: relative;
     padding: 0 16px;
@@ -177,8 +181,8 @@
     display: block;
   }
   .comparison-heading label {
-    display: block;
-    margin-top: 16px;
+    display: flex;
+    margin: 0 0 14px;
   }
   .data-row {
     font-size: 14px;

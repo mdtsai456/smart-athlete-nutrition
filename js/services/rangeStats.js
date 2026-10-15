@@ -96,18 +96,26 @@ export function playerRange(player, records, dates) {
     return ratios.length ? Math.round(ratios.reduce((sum, value) => sum + value, 0) / ratios.length * 100) : null;
   };
 
-  const isMultiDay = dates.length > 1;
-  const nutrientDetail = (key, unit) => {
-    const validDays = recordedDays.filter((day) => {
-      const goal = Number(day.target[key]);
+  const averagePair = (key) => {
+    const withTarget = recordedDays.filter((day) => {
+      const goal = Number(day.target?.[key]);
       return Number.isFinite(goal) && goal > 0;
     });
-    if (!validDays.length) return null;
-    const intake = Math.round(validDays.reduce((sum, day) => sum + day.totals[key], 0) / validDays.length);
-    const target = Math.round(validDays.reduce((sum, day) => sum + Number(day.target[key]), 0) / validDays.length);
-    return { intake, target, diff: Math.abs(target - intake), unit, isMultiDay };
+    const intakeDays = withTarget.length ? withTarget : recordedDays;
+    const intake = intakeDays.length
+      ? Math.round(intakeDays.reduce((sum, day) => sum + (Number(day.totals[key]) || 0), 0) / intakeDays.length)
+      : null;
+    const target = withTarget.length
+      ? Math.round(withTarget.reduce((sum, day) => sum + Number(day.target[key]), 0) / withTarget.length)
+      : null;
+    return { intake, target };
   };
-
+  const pairs = {
+    calories: averagePair("calories"),
+    protein: averagePair("protein"),
+    carbs: averagePair("carbs"),
+    fat: averagePair("fat"),
+  };
   const recordedMeals = days.reduce((sum, day) => sum + day.recordedMeals, 0);
   const expectedMeals = dates.length * MAIN_MEALS.length;
   const hitDays = recordedDays.filter((day) => {
@@ -121,12 +129,18 @@ export function playerRange(player, records, dates) {
     proteinRate: averageRate("protein"),
     carbRate: averageRate("carbs"),
     fatRate: averageRate("fat"),
-
-    calorieDetail: nutrientDetail("calories", "kcal"),
-    proteinDetail: nutrientDetail("protein", "g"),
-    carbDetail: nutrientDetail("carbs", "g"),
-    fatDetail: nutrientDetail("fat", "g"),
-
+    rangeIntake: {
+      calories: pairs.calories.intake,
+      protein: pairs.protein.intake,
+      carbs: pairs.carbs.intake,
+      fat: pairs.fat.intake,
+    },
+    rangeTarget: {
+      calories: pairs.calories.target,
+      protein: pairs.protein.target,
+      carbs: pairs.carbs.target,
+      fat: pairs.fat.target,
+    },
     recordedMeals,
     expectedMeals,
     completeness: expectedMeals ? Math.round((recordedMeals / expectedMeals) * 100) : 0,

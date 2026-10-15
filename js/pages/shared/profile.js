@@ -1,7 +1,7 @@
 /**
  * 球員個人資料表單。
+ * novalidate：錯誤改由欄位旁顯示，不用瀏覽器內建提示。
  */
-// 【表單錯誤定位】修改：<form> 加上 novalidate，關閉瀏覽器內建提示，改由 form-errors.js 在欄位旁顯示
 import { athleteForm } from "../../components/athlete-card.js";
 import { esc, avatar } from "../../components/ui.js";
 export function profileView(data) {

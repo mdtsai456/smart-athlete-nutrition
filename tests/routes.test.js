@@ -1,3 +1,7 @@
+/**
+ * 網址與角色對應測試。
+ * 球員頁面放在 athlete 資料夾。
+ */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { pageUrl, parsePath } from "../js/core/router.js";
