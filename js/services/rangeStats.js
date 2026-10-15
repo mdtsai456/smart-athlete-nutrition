@@ -65,21 +65,6 @@ function rate(amount, target) {
   return amount / goal;
 }
 
-/** 前半與後半的平均熱量差 8% 以上才標上升或下降。 */
-function trendOf(recordedDays) {
-  if (recordedDays.length < 2) return "flat";
-  const mid = Math.ceil(recordedDays.length / 2);
-  const average = (days) =>
-    days.reduce((sum, day) => sum + day.totals.calories, 0) / days.length;
-  const early = average(recordedDays.slice(0, mid));
-  const late = average(recordedDays.slice(mid));
-  if (!early) return late ? "up" : "flat";
-  const delta = (late - early) / early;
-  if (delta >= 0.08) return "up";
-  if (delta <= -0.08) return "down";
-  return "flat";
-}
-
 function statusOf(row) {
   if ([row.calorieRate, row.proteinRate, row.carbRate, row.fatRate].some((value) => value == null))
     return ["未設定", "neutral"];
@@ -120,7 +105,6 @@ export function playerRange(player, records, dates) {
     hitDays,
     dayCount: dates.length,
     completeDays: days.filter((day) => day.recordedMeals === MAIN_MEALS.length).length,
-    trend: trendOf(recordedDays),
     complete: expectedMeals > 0 && recordedMeals === expectedMeals,
   };
   const [status, tone] = statusOf(row);
