@@ -51,7 +51,9 @@ test("rates ignore empty days and a hit day needs calories and protein", () => {
   assert.equal(row.proteinRate, 100);
   assert.equal(row.hitDays, 1);
   assert.equal(row.completeness, 50);
-  assert.equal(row.status, "進度良好");
+  const calorie = row.alerts.find((alert) => alert.nutrient === "calorieRate");
+  assert.equal(calorie.label, "熱量符合設定範圍");
+  assert.equal(calorie.tone, "green");
 });
 
 test("high calories and low carbs are labeled after the record is complete enough", () => {
@@ -65,7 +67,10 @@ test("high calories and low carbs are labeled after the record is complete enoug
     ],
     dates,
   );
-  assert.equal(high.status, "熱量偏高");
+  // 找出熱量的警告狀態並驗證
+  const highCalAlert = high.alerts.find(a => a.nutrient === "calorieRate");
+  assert.equal(highCalAlert.label, "熱量偏高");
+  assert.equal(highCalAlert.tone, "orange");
   const lowCarb = playerRange(
     player,
     [
@@ -75,7 +80,11 @@ test("high calories and low carbs are labeled after the record is complete enoug
     ],
     dates,
   );
-  assert.equal(lowCarb.status, "碳水不足");
+  // 找出碳水的警告狀態並驗證
+  const lowCarbAlert = lowCarb.alerts.find(a => a.nutrient === "carbRate");
+  assert.equal(lowCarbAlert.label, "碳水不足");
+  assert.equal(lowCarbAlert.tone, "orange");
+  
   assert.equal(lowCarb.hitDays, 1);
 });
 
@@ -88,7 +97,9 @@ test("team averages skip players who recorded nothing", () => {
   );
   assert.equal(summary.calorieRate, 100);
   assert.equal(summary.completePlayers, 1);
-  assert.equal(summary.rows.find((row) => row.player.id === "p2").status, "未設定");
+  const missing = summary.rows.find((row) => row.player.id === "p2");
+  assert.equal(missing.alerts[0].label, "皆未設定目標");
+  assert.equal(missing.alerts[0].tone, "neutral");
   assert.equal(summary.attentionPlayers, 0);
 });
 

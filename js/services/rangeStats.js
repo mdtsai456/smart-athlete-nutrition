@@ -66,14 +66,23 @@ function rate(amount, target) {
 }
 
 function statusOf(row) {
-  if ([row.calorieRate, row.proteinRate, row.carbRate, row.fatRate].some((value) => value == null))
-    return ["未設定", "neutral"];
-  if (row.calorieRate > 115) return ["熱量偏高", "orange"];
-  if (row.calorieRate < 80) return ["熱量不足", "orange"];
-  if (row.proteinRate < 80) return ["蛋白質不足", "orange"];
-  if (row.carbRate < 80) return ["碳水不足", "orange"];
-  if (row.fatRate > 130) return ["脂肪偏高", "orange"];
-  return ["進度良好", "green"];
+  const rates = [row.calorieRate, row.proteinRate, row.carbRate, row.fatRate];
+  if (rates.every((value) => value == null)) {
+    return [{ nutrient: "all", label: "皆未設定目標", tone: "neutral" }];
+  }
+  const checks = [
+    { key: "calorieRate", label: "熱量", low: 80, high: 115 },
+    { key: "proteinRate", label: "蛋白質", low: 80, high: null },
+    { key: "carbRate", label: "碳水", low: 80, high: null },
+    { key: "fatRate", label: "脂肪", low: null, high: 130 },
+  ];
+  return checks.map((item) => {
+    const value = row[item.key];
+    if (value == null) return { nutrient: item.key, label: `${item.label}未設定目標`, tone: "neutral" };
+    if (item.low != null && value < item.low) return { nutrient: item.key, label: `${item.label}不足`, tone: "orange" };
+    if (item.high != null && value > item.high) return { nutrient: item.key, label: `${item.label}偏高`, tone: "orange" };
+    return { nutrient: item.key, label: `${item.label}符合設定範圍`, tone: "green" };
+  });
 }
 
 /** 各日使用當日計畫或有效的期間目標。達標日的熱量是 80%–115%，蛋白質至少 80%。 */
@@ -107,8 +116,8 @@ export function playerRange(player, records, dates) {
     completeDays: days.filter((day) => day.recordedMeals === MAIN_MEALS.length).length,
     complete: expectedMeals > 0 && recordedMeals === expectedMeals,
   };
-  const [status, tone] = statusOf(row);
-  return { ...row, status, tone };
+  const alerts = statusOf(row);
+  return { ...row, alerts };
 }
 
 /** 平均不含完全沒紀錄的球員。 */
@@ -125,6 +134,8 @@ export function rangeSummary(players, records, dates) {
     calorieRate: average("calorieRate"),
     proteinRate: average("proteinRate"),
     completePlayers: rows.filter((row) => row.complete).length,
-    attentionPlayers: rows.filter((row) => row.tone === "orange" || row.tone === "red").length,
+    attentionPlayers: rows.filter((row) => 
+      row.alerts.some((alert) => alert.tone === "orange" || alert.tone === "red")
+    ).length,
   };
 }

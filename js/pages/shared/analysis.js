@@ -38,7 +38,7 @@ function rangeTable(rows) {
   return `<div class="table-wrap"><table class="range-table"><thead><tr><th>球員</th><th>紀錄完整率</th><th>熱量</th><th>蛋白質</th><th>碳水</th><th>脂肪</th><th>達標天數</th><th>狀態</th></tr></thead><tbody>${rows
     .map(
       (row) =>
-        `<tr><td><div class="person">${avatar(row.player)}<div><strong>${esc(row.player.name)} #${row.player.number}</strong><small>${esc(row.player.sport || "籃球")} · ${esc(row.player.position || "")}</small></div></div></td><td><strong>${percent(row.completeness)}</strong><small>${row.recordedMeals} / ${row.expectedMeals}</small></td><td>${percent(row.calorieRate)}</td><td>${percent(row.proteinRate)}</td><td>${percent(row.carbRate)}</td><td>${percent(row.fatRate)}</td><td>${row.hitDays} / ${row.dayCount}</td><td>${badge(row.status, row.tone)}</td></tr>`,
+        `<tr><td><div class="person">${avatar(row.player)}<div><strong>${esc(row.player.name)} #${row.player.number}</strong><small>${esc(row.player.sport || "籃球")} · ${esc(row.player.position || "")}</small></div></div></td><td><strong>${percent(row.completeness)}</strong><small>${row.recordedMeals} / ${row.expectedMeals}</small></td><td>${percent(row.calorieRate)}</td><td>${percent(row.proteinRate)}</td><td>${percent(row.carbRate)}</td><td>${percent(row.fatRate)}</td><td>${row.hitDays} / ${row.dayCount}</td><td>${row.alerts.map((alert) => badge(alert.label, alert.tone)).join(" ")}</td></tr>`,
     )
     .join("")}</tbody></table></div>`;
 }
