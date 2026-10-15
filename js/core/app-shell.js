@@ -45,6 +45,47 @@ let kioskTimer = null;
 let recordDraft = null;
 let foodImport = null;
 const app = () => document.querySelector("#app");
+// 【新增 2. 篩選條件保存】飲食紀錄的球員與餐別篩選存在 sessionStorage。
+// 各頁是獨立 HTML，切換頁面會整頁重新載入，記憶體中的 state 會消失，所以要另外存。
+// 存入時一併記下帳號 id（owner）；帳號不同就視為切換帳號，不沿用舊篩選。
+const RECORD_FILTER_KEY = "recordFilters";
+let recordFilterOwner = null;
+const EMPTY_RECORD_FILTERS = { player: "", meals: [] };
+function loadRecordFilters(ownerId) {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(RECORD_FILTER_KEY) || "null");
+    // 沒有登入、沒有存過、或帳號不同（切換帳號、登出後再登入）：清除舊篩選。
+    if (!saved || !ownerId || saved.owner !== ownerId) {
+      sessionStorage.removeItem(RECORD_FILTER_KEY);
+      return { ...EMPTY_RECORD_FILTERS };
+    }
+    return {
+      player: typeof saved.player === "string" ? saved.player : "",
+      // 只保留仍存在的餐別名稱，避免舊資料或被改動的內容讓篩選失效。
+      meals: Array.isArray(saved.meals)
+        ? saved.meals.filter((meal) => MEAL_TYPES.some(([, label]) => label === meal))
+        : [],
+    };
+  } catch {
+    return { ...EMPTY_RECORD_FILTERS };
+  }
+}
+function saveRecordFilters() {
+  try {
+    const meals = state.recordMeals || [];
+    // 兩項都沒有選就不留資料。
+    if (!state.recordPlayer && !meals.length) {
+      sessionStorage.removeItem(RECORD_FILTER_KEY);
+      return;
+    }
+    sessionStorage.setItem(
+      RECORD_FILTER_KEY,
+      JSON.stringify({ owner: recordFilterOwner, player: state.recordPlayer || "", meals }),
+    );
+  } catch {
+    // 瀏覽器不允許儲存時，篩選仍可在目前頁面使用，只是不會保留。
+  }
+}
 function closeDialog() {
   clearTimeout(kioskTimer);
   recordDraft = null;
@@ -91,6 +132,11 @@ async function render() {
     }
     if (data.account && !data.players.some((player) => player.id === state.comparisonPlayer))
       state.comparisonPlayer = data.players[0]?.id || "";
+    // 【新增 2. 篩選條件保存】保存的球員若不在目前可看的名單（例如教練的指派期間改變），改回「全部球員」。
+    if (state.recordPlayer && !(data.players || []).some((p) => p.id === state.recordPlayer)) {
+      state.recordPlayer = "";
+      saveRecordFilters();
+    }
     state.data = data;
     root.innerHTML = layout();
     currentPage.mount?.(state);
@@ -306,13 +352,12 @@ async function action(name, id) {
   if (currentPage?.onAction?.(name, id)) return;
   if (name === "close") return closeDialog();
   if (name === "retry") return render();
-    // 【新增 1. 篩選重設與無資料提示】清除飲食紀錄的球員與餐別篩選。
-  // 只重設篩選，不動 state.date，所以清除後會顯示所選日期的全部紀錄。
+  // 清除飲食紀錄的球員與餐別篩選。只重設篩選，不動日期。
   if (name === "clear-record-filters") {
     state.recordPlayer = "";
     state.recordMeals = [];
+    saveRecordFilters();
     paintPage();
-    // 清除按鈕重繪後會消失，把鍵盤焦點移到球員下拉，避免焦點掉回頁面頂端。
     document.querySelector("#record-player")?.focus();
     return;
   }
@@ -517,6 +562,7 @@ function bindEvents() {
       const target = event.target;
       if (target.id === "record-player") state.recordPlayer = target.value;
       else state.recordMeals = [...document.querySelectorAll('input[name="record-meal"]:checked')].map((el) => el.value);
+      saveRecordFilters(); // 【新增 2. 篩選條件保存】每次變更都保存。
       paintPage();
       // 重繪後保留鍵盤焦點。
       const controls = document.querySelectorAll('#record-player, input[name="record-meal"]');
@@ -742,6 +788,11 @@ export async function startPage(page) {
     return;
   }
   state.role = session?.uiRole || page.role || "nutritionist";
+  // 【新增 2. 篩選條件保存】還原保存的篩選；帳號不同或未登入時會清除（見 loadRecordFilters）。
+  recordFilterOwner = session?.id || null;
+  const savedFilters = loadRecordFilters(recordFilterOwner);
+  state.recordPlayer = savedFilters.player;
+  state.recordMeals = savedFilters.meals;
   const legacyRoute = location.hash.replace(/^#/, "");
   if (
     legacyRoute &&
