@@ -487,6 +487,14 @@ main {
   background: #f9e9e7;
   color: #be7870;
 }
+.badge.yellow {
+  background: #fbf6dc;
+  color: #8d6b12;
+}
+.status-mark {
+  font-size: 13px;
+  line-height: 1;
+}
 .badge.neutral {
   color: #677d94;
   background: #edf4fb;

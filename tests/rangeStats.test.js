@@ -52,8 +52,13 @@ test("rates ignore empty days and a hit day needs calories and protein", () => {
   assert.equal(row.hitDays, 1);
   assert.equal(row.completeness, 50);
   const calorie = row.alerts.find((alert) => alert.nutrient === "calorieRate");
-  assert.equal(calorie.label, "熱量符合設定範圍");
+  assert.equal(calorie.label, "熱量");
+  assert.equal(calorie.level, "ok");
   assert.equal(calorie.tone, "green");
+  assert.equal(row.calorieDetail.intake, 2000);
+  assert.equal(row.calorieDetail.target, 2000);
+  assert.equal(row.calorieDetail.diff, 0);
+  assert.equal(row.calorieDetail.isMultiDay, true);
 });
 
 test("high calories and low carbs are labeled after the record is complete enough", () => {
@@ -69,8 +74,12 @@ test("high calories and low carbs are labeled after the record is complete enoug
   );
   // 找出熱量的警告狀態並驗證
   const highCalAlert = high.alerts.find(a => a.nutrient === "calorieRate");
-  assert.equal(highCalAlert.label, "熱量偏高");
-  assert.equal(highCalAlert.tone, "orange");
+  assert.equal(highCalAlert.label, "熱量");
+  assert.equal(highCalAlert.level, "high");
+  assert.equal(highCalAlert.tone, "red");
+  assert.equal(high.calorieDetail.intake, 2600);
+  assert.equal(high.calorieDetail.diff, 600);
+  assert.equal(high.calorieDetail.isMultiDay, false);
   const lowCarb = playerRange(
     player,
     [
@@ -82,8 +91,12 @@ test("high calories and low carbs are labeled after the record is complete enoug
   );
   // 找出碳水的警告狀態並驗證
   const lowCarbAlert = lowCarb.alerts.find(a => a.nutrient === "carbRate");
-  assert.equal(lowCarbAlert.label, "碳水不足");
-  assert.equal(lowCarbAlert.tone, "orange");
+  assert.equal(lowCarbAlert.label, "碳水");
+  assert.equal(lowCarbAlert.level, "low");
+  assert.equal(lowCarbAlert.tone, "yellow");
+  assert.equal(lowCarb.carbDetail.intake, 80);
+  assert.equal(lowCarb.carbDetail.target, 200);
+  assert.equal(lowCarb.carbDetail.diff, 120);
   
   assert.equal(lowCarb.hitDays, 1);
 });

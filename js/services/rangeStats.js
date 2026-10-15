@@ -68,7 +68,7 @@ function rate(amount, target) {
 function statusOf(row) {
   const rates = [row.calorieRate, row.proteinRate, row.carbRate, row.fatRate];
   if (rates.every((value) => value == null)) {
-    return [{ nutrient: "all", label: "皆未設定目標", tone: "neutral" }];
+    return [{ nutrient: "all", label: "皆未設定目標", level: "unset", tone: "neutral" }];
   }
   const checks = [
     { key: "calorieRate", label: "熱量", low: 80, high: 115 },
@@ -78,10 +78,10 @@ function statusOf(row) {
   ];
   return checks.map((item) => {
     const value = row[item.key];
-    if (value == null) return { nutrient: item.key, label: `${item.label}未設定目標`, tone: "neutral" };
-    if (item.low != null && value < item.low) return { nutrient: item.key, label: `${item.label}不足`, tone: "orange" };
-    if (item.high != null && value > item.high) return { nutrient: item.key, label: `${item.label}偏高`, tone: "orange" };
-    return { nutrient: item.key, label: `${item.label}符合設定範圍`, tone: "green" };
+    if (value == null) return { nutrient: item.key, label: item.label, level: "unset", tone: "neutral" };
+    if (item.low != null && value < item.low) return { nutrient: item.key, label: item.label, level: "low", tone: "yellow" };
+    if (item.high != null && value > item.high) return { nutrient: item.key, label: item.label, level: "high", tone: "red" };
+    return { nutrient: item.key, label: item.label, level: "ok", tone: "green" };
   });
 }
 
@@ -95,6 +95,19 @@ export function playerRange(player, records, dates) {
       .filter((value) => value != null);
     return ratios.length ? Math.round(ratios.reduce((sum, value) => sum + value, 0) / ratios.length * 100) : null;
   };
+
+  const isMultiDay = dates.length > 1;
+  const nutrientDetail = (key, unit) => {
+    const validDays = recordedDays.filter((day) => {
+      const goal = Number(day.target[key]);
+      return Number.isFinite(goal) && goal > 0;
+    });
+    if (!validDays.length) return null;
+    const intake = Math.round(validDays.reduce((sum, day) => sum + day.totals[key], 0) / validDays.length);
+    const target = Math.round(validDays.reduce((sum, day) => sum + Number(day.target[key]), 0) / validDays.length);
+    return { intake, target, diff: Math.abs(target - intake), unit, isMultiDay };
+  };
+
   const recordedMeals = days.reduce((sum, day) => sum + day.recordedMeals, 0);
   const expectedMeals = dates.length * MAIN_MEALS.length;
   const hitDays = recordedDays.filter((day) => {
@@ -108,6 +121,12 @@ export function playerRange(player, records, dates) {
     proteinRate: averageRate("protein"),
     carbRate: averageRate("carbs"),
     fatRate: averageRate("fat"),
+
+    calorieDetail: nutrientDetail("calories", "kcal"),
+    proteinDetail: nutrientDetail("protein", "g"),
+    carbDetail: nutrientDetail("carbs", "g"),
+    fatDetail: nutrientDetail("fat", "g"),
+
     recordedMeals,
     expectedMeals,
     completeness: expectedMeals ? Math.round((recordedMeals / expectedMeals) * 100) : 0,
@@ -135,7 +154,7 @@ export function rangeSummary(players, records, dates) {
     proteinRate: average("proteinRate"),
     completePlayers: rows.filter((row) => row.complete).length,
     attentionPlayers: rows.filter((row) => 
-      row.alerts.some((alert) => alert.tone === "orange" || alert.tone === "red")
+      row.alerts.some((alert) => alert.tone === "yellow" || alert.tone === "red")
     ).length,
   };
 }
