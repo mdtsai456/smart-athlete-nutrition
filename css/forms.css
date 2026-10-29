@@ -163,6 +163,15 @@ dialog > .record-photo {
 }
 #toast {
   position: fixed;
+  /* 清除 popover 預設置中與邊框，維持底部提示位置。 */
+  top: auto;
+  right: auto;
+  margin: 0;
+  border: 0;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
   bottom: 25px;
   left: 50%;
   transform: translate(-50%, 20px);
@@ -632,3 +641,114 @@ dialog .plate-camera {
 .meal-image-thumb.meal-image-placeholder { display: grid; place-items: end center; padding: 4px; background: #e7f1f7; }
 .meal-image-thumb > span { font-size: 10px; color: #34546f; }
 .guide > .meal-image-placeholder { min-height: 220px; margin-top: 16px; }
+
+/* 缺少辨識重量時，由使用者輸入克數；窄畫面沿用操作列換行。 */
+.record-layout .item-actions input[data-weight-for] {
+  width: 100px;
+  height: 36px;
+  padding: 6px 8px;
+}
+
+/* 提示屬於開啟中的對話框，捲動時保持在框內頂部。 */
+#toast.dialog-toast {
+  position: sticky;
+  top: 0;
+  bottom: auto;
+  left: auto;
+  right: auto;
+  transform: none;
+  width: 100%;
+  max-width: none;
+  border-radius: 0;
+  text-align: center;
+  transition: none;
+}
+#toast[hidden] { display: none; }
+
+.recognition-candidates {
+  border: 0;
+  padding: 0;
+  margin: 10px 0;
+  font-size: 13px;
+}
+
+/* 保留 radio 的鍵盤操作，以按鈕外觀顯示互斥選項。 */
+.recognition-candidate-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 0;
+}
+.recognition-candidates label { position: relative; margin: 0; cursor: pointer; }
+.recognition-candidates input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.recognition-candidates label > span {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 2px solid #c9d9ea;
+  border-radius: 12px;
+  background: #fff;
+  color: #195e91;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.recognition-candidates label:hover > span { border-color: #718aa3; }
+.recognition-candidates input:checked + span {
+  background: #fff;
+  border-color: #17334e;
+}
+/* 菜名為主文字，候選順位使用灰色小字。 */
+.recognition-candidates .candidate-name { color: #17334e; }
+.recognition-candidates .candidate-rank {
+  color: #7b8490;
+  font-size: 12px;
+  font-weight: 400;
+}
+.recognition-candidates input:focus-visible + span {
+  outline: 3px solid #75aaff;
+  outline-offset: 3px;
+}
+
+/* 圖片與辨識框共用同一個容器，縮放時保留相同座標。 */
+.recognition-photo {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.recognition-photo > img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.recognition-box {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid var(--box-color);
+  pointer-events: none;
+}
+.recognition-box > span {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 6px;
+  background: var(--box-color);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}

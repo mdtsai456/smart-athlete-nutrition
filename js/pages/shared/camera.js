@@ -83,3 +83,15 @@ export function releaseExtraCamera() {
 export function cameraView() {
   return `<section class="panel panel-padded plate-page"><div class="plate-camera"><video id="plate-camera" autoplay playsinline muted></video><div class="plate-frame" aria-hidden="true"></div><p id="plate-camera-note">正在開啟攝影機</p></div><div class="actions">${button("開始記錄", "record", true)}</div></section>`;
 }
+
+/** 擷取攝影機目前影格。影片未就緒時不建立空白照片。 */
+export async function capturePlatePhoto(video) {
+  if (!video || video.readyState < 2 || !video.videoWidth || !video.videoHeight)
+    throw new Error("攝影機尚未就緒，請稍後再拍攝，或選取照片。");
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext("2d").drawImage(video, 0, 0);
+  return new Promise((resolve, reject) => canvas.toBlob(
+    blob => blob ? resolve(blob) : reject(new Error("拍攝失敗，請重試。")), "image/jpeg", 0.9));
+}

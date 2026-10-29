@@ -142,3 +142,24 @@ test("delete removes an unused food and keeps a food used by a meal", async () =
   assert.equal((await loadPage()).foods.some((item) => item.id === food.id), false);
   await assert.rejects(() => deleteFood("f1"), /這道菜已用在飲食紀錄，不能刪除/);
 });
+
+// 支援帶 XML 前綴、反向屬性順序，以及數值前的空白儲存格。
+test("namespaced Excel reads the referenced sheet without shifting blank cells", async () => {
+  const bytes = readFileSync(new URL('./fixtures/namespaced-menu.xlsx', import.meta.url));
+  const rows = await xlsxToRows(bytes);
+  assert.deepEqual(rows[1], ['測試飯', '', 130]);
+  const result = previewFoodImport(rows);
+  assert.equal(result.ready.length, 1);
+  assert.equal(result.ready[0].amounts.energy, 130);
+});
+
+test("recognition menu headers map without inventing missing nutrition", () => {
+  const header = ['實際菜名', '菜色編號', '來源', '熱量（kcal/100g）', '粗蛋白（g/100g）', '粗脂肪（g/100g）', '總碳水（g/100g）'];
+  const valid = previewFoodImport([header, ['測試菜', 17, '測試菜單', 100, 10, 4, 6]]);
+  assert.equal(valid.ready[0].sourceFoodCode, '17');
+  assert.deepEqual(valid.ready[0].amounts, { energy: 100, protein: 10, carbohydrate: 6, fat: 4 });
+  const empty = previewFoodImport([header, ['測試菜', 17, '', '', '', '', '']]);
+  assert.equal(empty.fileError, '');
+  assert.equal(empty.ready.length, 0);
+  assert.ok(empty.rejected[0].reasons.includes('至少要有一項營養數字'));
+});

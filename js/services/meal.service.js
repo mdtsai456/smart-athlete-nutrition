@@ -121,14 +121,16 @@ export async function editMeal(mealId, actorId, payload, expectedRevision) {
     timezone: payload.timezone || meal.timezone,
   });
 }
-export async function attachMealImage(mealId, actorId, expectedRevision) {
+export async function attachMealImage(mealId, actorId, expectedRevision, image = {}) {
   const meal = await requireMeal(mealId);
   assertCanEdit(meal, actorId);
   assertRevision(meal, expectedRevision);
   await mealImages.create({
       mealRecordId: mealId,
-      objectKey: `meals/${mealId}/${crypto.randomUUID()}.jpg`,
-      mimeType: "image/jpeg",
+      objectKey: image.objectKey || `meals/${mealId}/${crypto.randomUUID()}.jpg`,
+      url: image.url || null,
+      annotatedUrl: image.annotatedUrl || null,
+      mimeType: image.mimeType || "image/jpeg",
       uploadedAt: nowIso(),
       uploadedByAccountId: actorId,
   });
@@ -210,6 +212,8 @@ function writeRecognitionItem(analysis, item, foods, stamp) {
     mealAnalysisId: analysis.id,
     foodId: food?.id || null,
     detectedLabel: food?.name || item.detectedLabel || "尚未對應",
+    alternative: item.alternative || null,
+    bbox: item.bbox || null,
     estimatedWeightG: recognitionWeight(item.grams),
     confirmedWeightG: null,
     weightSource: null,
@@ -513,7 +517,12 @@ export function presentMeal(meal, tables) {
     reason: meal.statusChangeReason,
     status: meal.status,
     statusLabel: MEAL_STATUS[meal.status] || meal.status,
-    image: image && { ...image, url: image.url || null },
+    image: image && {
+      ...image, url: image.url || null,
+      // 舊紀錄只有原圖網址；依辨識服務的儲存規格取得框選圖。
+      annotatedUrl: image.annotatedUrl || (/\/uploads\/[^/]+\/original\.(jpg|jpeg|png|webp)$/i.test(image.url || "")
+        ? image.url.replace(/original\.[^/]+$/, "result_boxed.jpg") : null),
+    },
     analysis: analysis && {
       ...analysis,
       statusLabel: ANALYSIS_STATUS[analysis.status] || analysis.status,

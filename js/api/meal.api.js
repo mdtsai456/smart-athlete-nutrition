@@ -104,7 +104,7 @@ export async function mutateMeal(mealId, body) {
     case "delete_item":
       return writeDeleteItem(payload.itemId, actor, body.expectedRevision, reason);
     case "add_image":
-      return writeMealImage(mealId, actor, body.expectedRevision);
+      return writeMealImage(mealId, actor, body.expectedRevision, payload);
     case "delete_image":
       return deleteMealImage(mealId, actor, body.expectedRevision);
     case "queue_analysis":
@@ -153,8 +153,8 @@ export async function finishMealAnalysis(mealId, outcome) {
 
 /** 這些函式呼叫 createMeal、mutateMeal 或 saveMeal。 */
 export { createMeal as openDraftMeal };
-export const attachMealImage = (mealId, expectedRevision) =>
-  mutateMeal(mealId, { action: "add_image", expectedRevision, payload: {} });
+export const attachMealImage = (mealId, expectedRevision, image = {}) =>
+  mutateMeal(mealId, { action: "add_image", expectedRevision, payload: image });
 export const queueMealAnalysis = (mealId, expectedRevision) =>
   mutateMeal(mealId, { action: "queue_analysis", expectedRevision, payload: {} });
 export const addMealItem = (mealId, item, expectedRevision) =>

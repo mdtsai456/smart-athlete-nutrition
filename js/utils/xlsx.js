@@ -230,7 +230,8 @@ async function readEntry(bytes, entry) {
 function entryText(files, name) {
   const file = files.get(name.replace(/^\/+/, ""));
   if (!file) return "";
-  return textDecoder.decode(file);
+  // Excel 產生器可替元素加上 x: 等命名空間前綴；文字內容與屬性保持原樣。
+  return textDecoder.decode(file).replace(/(<\/?)[A-Za-z_][\w.-]*:/g, "$1");
 }
 function sharedStrings(xml) {
   const values = [];
@@ -246,13 +247,14 @@ function sheetRows(xml, strings) {
   const rows = [];
   for (const row of xml.matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/g)) {
     const cells = [];
-    for (const cell of row[1].matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/g)) {
+    for (const cell of row[1].matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
       const ref = cell[1].match(/\br="([A-Z]+)\d+"/)?.[1] || colName(cells.length);
       const type = cell[1].match(/\bt="([^"]+)"/)?.[1] || "";
       const index = colIndex(ref);
       while (cells.length < index) cells.push("");
-      const inline = cell[2].match(/<t\b[^>]*>([\s\S]*?)<\/t>/);
-      const value = cell[2].match(/<v>([\s\S]*?)<\/v>/)?.[1];
+      const content = cell[2] || "";
+      const inline = content.match(/<t\b[^>]*>([\s\S]*?)<\/t>/);
+      const value = content.match(/<v>([\s\S]*?)<\/v>/)?.[1];
       if (type === "s") cells[index] = strings[Number(value)] ?? "";
       else if (type === "inlineStr" && inline) cells[index] = decodeXml(inline[1]);
       else if (value == null || value === "") cells[index] = "";
@@ -277,8 +279,11 @@ export async function xlsxToRows(bytes) {
   if (!workbook) throw new Error("Excel 裡沒有工作表");
   const rels = entryText(files, "xl/_rels/workbook.xml.rels");
   const sheetId = workbook.match(/<sheet\b[^>]*\br:id="([^"]+)"/)?.[1];
+  // Relationship 的屬性順序不固定，不能假設 Id 一定在 Target 前面。
+  const relationship = [...rels.matchAll(/<Relationship\b[^>]*\/?>/g)]
+    .find(([tag]) => tag.match(/\bId="([^"]+)"/)?.[1] === sheetId)?.[0];
   const target = sheetId
-    ? rels.match(new RegExp(`Id="${sheetId}"[^>]*Target="([^"]+)"`))?.[1]
+    ? relationship?.match(/\bTarget="([^"]+)"/)?.[1]
     : "worksheets/sheet1.xml";
   if (!target) throw new Error("Excel 裡沒有工作表");
   const sheetPath = target.startsWith("/")

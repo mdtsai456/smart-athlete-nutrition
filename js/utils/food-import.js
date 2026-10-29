@@ -10,17 +10,17 @@ export const NUTRIENT_LABEL = {
   fat: "脂肪",
 };
 const HEADER_FIELDS = [
-  ["name", ["菜色名稱", "菜名", "名稱", "食物名稱", "food_name", "foodname", "name"]],
+  ["name", ["實際菜名", "菜色名稱", "菜名", "名稱", "食物名稱", "food_name", "foodname", "name"]],
   ["foodType", ["分類", "菜色分類", "food_type", "foodtype", "category"]],
   ["brand", ["品牌", "brand"]],
   ["description", ["說明", "描述", "description"]],
   ["source", ["來源", "source"]],
-  ["sourceFoodCode", ["來源代碼", "source_food_code", "sourcefoodcode"]],
+  ["sourceFoodCode", ["菜色編號", "來源代碼", "source_food_code", "sourcefoodcode"]],
   ["density", ["密度", "density_g_per_ml", "density"]],
   ["energy", ["熱量", "kcal", "calories", "energy", "enerc"]],
-  ["protein", ["蛋白質", "protein", "prot"]],
-  ["carbohydrate", ["碳水", "碳水化合物", "carbs", "carbohydrate", "cho"]],
-  ["fat", ["脂肪", "fat"]],
+  ["protein", ["粗蛋白", "蛋白質", "protein", "prot"]],
+  ["carbohydrate", ["總碳水", "碳水", "碳水化合物", "carbs", "carbohydrate", "cho"]],
+  ["fat", ["粗脂肪", "脂肪", "fat"]],
 ];
 function cellText(value) {
   return String(value ?? "").trim();

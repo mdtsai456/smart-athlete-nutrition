@@ -1,0 +1,16 @@
+{
+  "model": "alternative-ui-test",
+  "predictions": [
+    {
+      "name": "香煎雞胸肉",
+      "dish_code": null,
+      "confidence": 0.55,
+      "bbox": [0.5, 0.48, 0.33, 0.3],
+      "alternative": {
+        "name": "烤鮭魚",
+        "dish_code": null,
+        "confidence": 0.45
+      }
+    }
+  ]
+}
